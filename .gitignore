@@ -1,0 +1,9 @@
+[B|b]uild/*
+Debug/*
+Release/*
+RelWithDebInfo/*
+MeshletGenerator/bin/*
+MeshletGenerator/obj/*
+MeshletRender/bin/*
+MeshletRender/obj/*
+packages/*
