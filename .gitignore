@@ -6,4 +6,7 @@ MeshletGenerator/bin/*
 MeshletGenerator/obj/*
 MeshletRender/bin/*
 MeshletRender/obj/*
+GeometryCreator/bin/*
+GeometryCreator/obj/*
 packages/*
+.vs
