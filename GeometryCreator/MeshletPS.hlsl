@@ -10,5 +10,9 @@ struct VertexOut
 
 float4 main(VertexOut input) : SV_TARGET
 {
-    return float4(1, 0, 0, 1);
+    float3 diffuseColor = float3(
+            float(input.MeshletIndex & 1),
+            float(input.MeshletIndex & 3) / 4,
+            float(input.MeshletIndex & 7) / 8);
+    return float4(diffuseColor, 1);
 }

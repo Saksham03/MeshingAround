@@ -112,7 +112,7 @@ VertexOut GetVertexAttributes(uint meshletIndex, uint vertexIndex)
 
 
 [RootSignature(ROOT_SIG)]
-[NumThreads(3, 1, 1)]
+[NumThreads(7, 1, 1)]
 [OutputTopology("triangle")]
 void main(
     uint gtid : SV_GroupThreadID,
@@ -122,42 +122,26 @@ void main(
 )
 {
 
-    uint noOfPrims = 1;
-    uint noOfVerts = 3;
+    uint noOfPrims = 6;
+    uint noOfVerts = 7;
 
     SetMeshOutputCounts(noOfVerts, noOfPrims);
 
-    /*tris[0] = uint3(0, 2, 1);
-    VertexOut vout;
-    vout.Normal = float3(0, 0, 1);
-    vout.MeshletIndex = 0;
-    float mulf = 1;
-    float4 posc = float4(-2, 0, 0.2, 1) * mulf;
-    vout.PositionHS = mul(posc, Globals.WorldViewProj);
-    vout.PositionVS = mul(posc, Globals.WorldView).xyz;
-    verts[0] = vout;
-    posc = float4(0, 0, 0.2, 1) * mulf;
-    vout.PositionHS = mul(posc, Globals.WorldViewProj);
-    vout.PositionVS = mul(posc, Globals.WorldView).xyz;
-    verts[1] = vout;
-    posc = float4(0, 5, 0.2, 1) * mulf;
-    vout.PositionHS = mul(posc, Globals.WorldViewProj);
-    vout.PositionVS = mul(posc, Globals.WorldView).xyz;
-    verts[2] = vout;*/
-
     if (gtid < noOfPrims)
     {
-        tris[gtid] = uint3(0, 2, 1);
+        tris[gtid] = uint3( gtid + 1, 0, gtid == noOfPrims - 1 ? (gtid + 2) % 6 : gtid + 2);
     }
 
     if (gtid < noOfVerts)
     {
         VertexOut vout;
-        float x = -10;
-        float y = 0;
+        float r = 5;
+        float x = gtid == 0 ? 0 : r * cos(radians((gtid - 1) * 60));
+        float y = gtid == 0 ? 0 : r * sin(radians((gtid - 1) * 60));
         float z = 0.2;
-        vout.PositionHS = mul(float4(x + 5 * gtid, y - 10 * (gtid % 2), z, 1), Globals.WorldViewProj);
-        vout.PositionVS = vout.PositionHS.xyz;
+        vout.PositionHS = mul(float4(x, y, z, 1), Globals.WorldViewProj);
+        //vout.PositionVS = vout.PositionHS.xyz;
+        vout.MeshletIndex = (gid + 1) * gtid;
         verts[gtid] = vout;
     }
 }
