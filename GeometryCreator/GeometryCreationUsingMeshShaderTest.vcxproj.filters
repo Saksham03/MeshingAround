@@ -90,16 +90,22 @@
       <Filter>Assets\Models</Filter>
     </None>
     <None Include="packages.config" />
-  </ItemGroup>
-  <ItemGroup>
-    <FxCompile Include="MeshletMS.hlsl">
+    <None Include="Common.hlsli">
       <Filter>Assets\Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="MeshletPS.hlsl">
-      <Filter>Assets\Shaders</Filter>
-    </FxCompile>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="MeshletRenderer.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="GeomTestMS.hlsl">
+      <Filter>Assets\Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="GeomTestPS.hlsl">
+      <Filter>Assets\Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="GeomTestAS.hlsl">
+      <Filter>Assets\Shaders</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>

@@ -9,12 +9,8 @@
 //
 //*********************************************************
 
-#define ROOT_SIG "CBV(b0), \
-                  RootConstants(b1, num32bitconstants=2), \
-                  SRV(t0), \
-                  SRV(t1), \
-                  SRV(t2), \
-                  SRV(t3)"
+#include "Common.hlsli"
+
 
 struct Constants
 {
@@ -117,6 +113,8 @@ VertexOut GetVertexAttributes(uint meshletIndex, uint vertexIndex)
 void main(
     uint gtid : SV_GroupThreadID,
     uint gid : SV_GroupID,
+    uint dtid: SV_DispatchThreadID,
+    in payload Payload payload,
     out indices uint3 tris[126],
     out vertices VertexOut verts[64]
 )
@@ -139,7 +137,7 @@ void main(
         float x = gtid == 0 ? 0 : r * cos(radians((gtid - 1) * 60));
         float y = gtid == 0 ? 0 : r * sin(radians((gtid - 1) * 60));
         float z = 0.2;
-        vout.PositionHS = mul(float4(x, y, z, 1), Globals.WorldViewProj);
+        vout.PositionHS = mul(float4(x + 2 * r + payload.ParentGroupID, y, z, 1), Globals.WorldViewProj);
         //vout.PositionVS = vout.PositionHS.xyz;
         vout.MeshletIndex = (gid + 1) * gtid;
         verts[gtid] = vout;

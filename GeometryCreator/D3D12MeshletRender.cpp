@@ -16,8 +16,9 @@
 const wchar_t* D3D12MeshletRender::c_meshFilename = L"..\\Assets\\wahoo.bin";
 const wchar_t* D3D12MeshletRender::c_meshObjFilename = L"..\\Assets\\cow.obj";
 
-const wchar_t* D3D12MeshletRender::c_meshShaderFilename = L"MeshletMS.cso";
-const wchar_t* D3D12MeshletRender::c_pixelShaderFilename = L"MeshletPS.cso";
+const wchar_t* D3D12MeshletRender::c_ampShaderFilename = L"GeomTestAS.cso";
+const wchar_t* D3D12MeshletRender::c_meshShaderFilename = L"GeomTestMS.cso";
+const wchar_t* D3D12MeshletRender::c_pixelShaderFilename = L"GeomTestPS.cso";
 
 
 // Ray casting intersection tests for determining meshlet picking.
@@ -283,12 +284,21 @@ void D3D12MeshletRender::LoadAssets()
 {
     // Create the pipeline state, which includes compiling and loading shaders.
     {
+        // Create the command list.
+        ThrowIfFailed(m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_commandAllocators[m_frameIndex].Get(), m_pipelineState.Get(), IID_PPV_ARGS(&m_commandList)));
+
+        // Command lists are created in the recording state, but there is nothing
+        // to record yet. The main loop expects it to be closed, so close it now.
+        ThrowIfFailed(m_commandList->Close());
+        
+        
         struct 
         { 
             byte* data; 
             uint32_t size; 
-        } meshShader, pixelShader;
+        } ampShader, meshShader, pixelShader;
 
+        ReadDataFromFile(GetAssetFullPath(c_ampShaderFilename).c_str(), &ampShader.data, &ampShader.size);
         ReadDataFromFile(GetAssetFullPath(c_meshShaderFilename).c_str(), &meshShader.data, &meshShader.size);
         ReadDataFromFile(GetAssetFullPath(c_pixelShaderFilename).c_str(), &pixelShader.data, &pixelShader.size);
 
@@ -297,6 +307,7 @@ void D3D12MeshletRender::LoadAssets()
 
         D3DX12_MESH_SHADER_PIPELINE_STATE_DESC psoDesc = {};
         psoDesc.pRootSignature        = m_rootSignature.Get();
+        psoDesc.AS                    = { ampShader.data, ampShader.size };
         psoDesc.MS                    = { meshShader.data, meshShader.size };
         psoDesc.PS                    = { pixelShader.data, pixelShader.size };
         psoDesc.NumRenderTargets      = 1;
@@ -316,13 +327,6 @@ void D3D12MeshletRender::LoadAssets()
 
         ThrowIfFailed(m_device->CreatePipelineState(&streamDesc, IID_PPV_ARGS(&m_pipelineState)));
     }
-
-    // Create the command list.
-    ThrowIfFailed(m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_commandAllocators[m_frameIndex].Get(), m_pipelineState.Get(), IID_PPV_ARGS(&m_commandList)));
-
-    // Command lists are created in the recording state, but there is nothing
-    // to record yet. The main loop expects it to be closed, so close it now.
-    ThrowIfFailed(m_commandList->Close());
 
     //m_model.LoadFromFile(c_meshFilename);
     m_model.CreateMeshletsFromFile(c_meshObjFilename);
@@ -461,7 +465,8 @@ void D3D12MeshletRender::PopulateCommandList()
 
     m_commandList->SetGraphicsRootConstantBufferView(0, m_constantBuffer->GetGPUVirtualAddress() + sizeof(SceneConstantBuffer) * m_frameIndex);
 
-    for (auto& mesh : m_model)
+    m_commandList->DispatchMesh(1, 1, 1);
+    /*for (auto& mesh : m_model)
     {
         m_commandList->SetGraphicsRoot32BitConstant(1, mesh.IndexSize, 0);
         m_commandList->SetGraphicsRootShaderResourceView(2, mesh.VertexResources[0]->GetGPUVirtualAddress());
@@ -474,7 +479,7 @@ void D3D12MeshletRender::PopulateCommandList()
             m_commandList->SetGraphicsRoot32BitConstant(1, subset.Offset, 1);
             m_commandList->DispatchMesh(subset.Count, 1, 1);
         }
-    }
+    }*/
 
     // Indicate that the back buffer will now be used to present.
     const auto toPresentBarrier = CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[m_frameIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);

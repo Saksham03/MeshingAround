@@ -92,6 +92,7 @@ private:
 private:
     static const wchar_t* c_meshFilename;
     static const wchar_t* c_meshObjFilename;
+    static const wchar_t* c_ampShaderFilename;
     static const wchar_t* c_meshShaderFilename;
     static const wchar_t* c_pixelShaderFilename;
 };
