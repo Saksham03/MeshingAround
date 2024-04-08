@@ -16,6 +16,9 @@
                   SRV(t2), \
                   SRV(t3)"
 
+#define MAX_MS_X 2500
+#define MAX_MS_Y 2500
+#define MAX_MS_Z 1
 
 struct Payload
 {
@@ -26,5 +29,4 @@ struct Payload
     // (list of LOD 0 instance indices), (list of LOD 1 instance indices), ... (list of LOD MAX_LOD_LEVELS-1 instance indices)                                            
     uint InstanceList[10];
     uint InstanceOffsets[5 + 1]; // The offset into the Instance List at which each LOD level begins.
-    float ParentGroupID;
 };

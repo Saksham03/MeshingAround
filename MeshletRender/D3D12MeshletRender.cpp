@@ -14,7 +14,7 @@
 
 //const wchar_t* D3D12MeshletRender::c_meshFilename = L"..\\Assets\\Dragon_LOD0.bin";
 const wchar_t* D3D12MeshletRender::c_meshFilename = L"..\\Assets\\wahoo.bin";
-const wchar_t* D3D12MeshletRender::c_meshObjFilename = L"..\\Assets\\cow.obj";
+const wchar_t* D3D12MeshletRender::c_meshObjFilename = L"..\\Assets\\wahoo.obj";
 
 const wchar_t* D3D12MeshletRender::c_meshShaderFilename = L"MeshletMS.cso";
 const wchar_t* D3D12MeshletRender::c_pixelShaderFilename = L"MeshletPS.cso";

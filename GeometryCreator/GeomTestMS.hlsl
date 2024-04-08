@@ -112,7 +112,7 @@ VertexOut GetVertexAttributes(uint meshletIndex, uint vertexIndex)
 [OutputTopology("triangle")]
 void main(
     uint gtid : SV_GroupThreadID,
-    uint gid : SV_GroupID,
+    uint3 gid : SV_GroupID,
     uint dtid: SV_DispatchThreadID,
     in payload Payload payload,
     out indices uint3 tris[126],
@@ -135,11 +135,13 @@ void main(
         VertexOut vout;
         float r = 5;
         float x = gtid == 0 ? 0 : r * cos(radians((gtid - 1) * 60));
+        x += 2 * r * (gid.x - MAX_MS_X / 2.f);
         float y = gtid == 0 ? 0 : r * sin(radians((gtid - 1) * 60));
+        y += 2 * r * (gid.y - MAX_MS_Y / 2.f);
         float z = 0.2;
-        vout.PositionHS = mul(float4(x + 2 * r + payload.ParentGroupID, y, z, 1), Globals.WorldViewProj);
+        vout.PositionHS = mul(float4(x, y, z, 1), Globals.WorldViewProj);
         //vout.PositionVS = vout.PositionHS.xyz;
-        vout.MeshletIndex = (gid + 1) * gtid;
+        vout.MeshletIndex = (gid.x + 3) * (gid.y + 5) * (gtid + 2);
         verts[gtid] = vout;
     }
 }
