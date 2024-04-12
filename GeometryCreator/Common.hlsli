@@ -16,8 +16,8 @@
                   SRV(t2), \
                   SRV(t3)"
 
-#define MAX_MS_X 2500
-#define MAX_MS_Y 2500
+#define MAX_MS_X 1
+#define MAX_MS_Y 1
 #define MAX_MS_Z 1
 
 struct Payload

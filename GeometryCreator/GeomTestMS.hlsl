@@ -106,9 +106,23 @@ VertexOut GetVertexAttributes(uint meshletIndex, uint vertexIndex)
     return vout;
 }
 
+VertexOut GetTransformedVert(float4 in_vert, float2 t_xy, float rot, float scale)
+{
+    VertexOut vout;
+    float4 out_vert = in_vert;
+    out_vert.xy *= scale;
+    out_vert.x = out_vert.x * cos(rot) - out_vert.y * sin(rot);
+    out_vert.y = out_vert.x * sin(rot) + out_vert.y * cos(rot);
+    out_vert.xy += t_xy;
+
+    out_vert.xy *= 50;
+    vout.PositionHS = mul(out_vert, Globals.WorldViewProj);
+    return vout;
+}
+
 
 [RootSignature(ROOT_SIG)]
-[NumThreads(7, 1, 1)]
+[NumThreads(1, 1, 1)]
 [OutputTopology("triangle")]
 void main(
     uint gtid : SV_GroupThreadID,
@@ -120,28 +134,53 @@ void main(
 )
 {
 
-    uint noOfPrims = 6;
-    uint noOfVerts = 7;
+    uint noOfPrims = 4;
+    uint noOfVerts = 6;
 
     SetMeshOutputCounts(noOfVerts, noOfPrims);
 
+    float r = 1.;
+    float4 pr_0 = float4(0, 0, 0.2, 1);
+    float4 pr_1 = float4(r, 0, 0.2, 1);
+    float4 pr_2 = float4(0, r, 0.2, 1);
+
     if (gtid < noOfPrims)
     {
-        tris[gtid] = uint3( gtid + 1, 0, gtid == noOfPrims - 1 ? (gtid + 2) % 6 : gtid + 2);
-    }
+        //tris[gtid] = uint3( gtid + 1, 0, gtid == noOfPrims - 1 ? (gtid + 2) % 6 : gtid + 2);
+   
+        float PI = 3.14;
 
-    if (gtid < noOfVerts)
-    {
-        VertexOut vout;
-        float r = 5;
-        float x = gtid == 0 ? 0 : r * cos(radians((gtid - 1) * 60));
-        x += 2 * r * (gid.x - MAX_MS_X / 2.f);
-        float y = gtid == 0 ? 0 : r * sin(radians((gtid - 1) * 60));
-        y += 2 * r * (gid.y - MAX_MS_Y / 2.f);
-        float z = 0.2;
-        vout.PositionHS = mul(float4(x, y, z, 1), Globals.WorldViewProj);
-        //vout.PositionVS = vout.PositionHS.xyz;
-        vout.MeshletIndex = (gid.x + 3) * (gid.y + 5) * (gtid + 2);
-        verts[gtid] = vout;
+        VertexOut p_0 = GetTransformedVert(pr_0, float2(0, 0), radians(0.), 1.);
+        p_0.MeshletIndex = 1;
+        VertexOut p_1 = GetTransformedVert(pr_1, float2(0, 0), radians(0.), 1.);
+        p_1.MeshletIndex = 2;
+        VertexOut p_2 = GetTransformedVert(pr_2, float2(0, 0), radians(0.), 1.);
+        p_2.MeshletIndex = 3;
+
+        VertexOut p_12 = GetTransformedVert(pr_1, float2(0, 0.5), radians(0), 0.5);
+        p_12.MeshletIndex = 4;
+        VertexOut p_01 = GetTransformedVert(pr_0, float2(0.5, 0), radians(PI/2), 0.5);
+        p_01.MeshletIndex = 5;
+        VertexOut p_02 = GetTransformedVert(pr_0, float2(0, 0.5), radians(3 * PI / 2), 0.5);
+        p_02.MeshletIndex = 6;
+
+        /*verts[0] = p_12;
+        verts[1] = p_1;
+        verts[2] = p_01;
+        tris[0] = uint3(0, 1, 2);*/
+
+        verts[0] = p_12;
+        verts[1] = p_02;
+        verts[2] = p_2;
+        tris[0] = uint3(0, 1, 2);
+
+        verts[3] = p_0;
+        tris[1] = uint3(3, 1, 0);
+
+        verts[4] = p_01;
+        tris[2] = uint3(4, 3, 0);
+
+        verts[5] = p_1;
+        tris[3] = uint3(5, 4, 0);
     }
 }
