@@ -120,6 +120,62 @@ VertexOut GetTransformedVert(float4 in_vert, float2 t_xy, float rot, float scale
     return vout;
 }
 
+float4 barycentricInterp(float4 in_verts[3], float2 t)
+{
+    return
+        in_verts[0] +
+        t.x * (in_verts[1] - in_verts[0]) +
+        t.y * (in_verts[2] - in_verts[0]);
+}
+
+matrix<float, 3, 3> bitToXform(uint bit)
+{
+    float scale = float(bit) - 0.5f;
+    float3 column1 = float3(scale, -0.5f, 0.0);
+    float3 column2 = float3(-0.5f, -scale, 0.0);
+    float3 column3 = float3(0.5f, 0.5f, 1.0);
+    float3x3 xFormMat = 
+    {
+        float3(column1.x, column2.x, column3.x),
+        float3(column1.y, column2.y, column3.y),
+        float3(column1.z, column2.z, column3.z),
+    };
+    /*float3x3 xFormMat =
+    {
+        float3(column1.x, column1.y, column1.z),
+        float3(column2.x, column2.y, column2.z),
+        float3(column3.x, column3.y, column3.z),
+    };*/
+    return xFormMat;
+}
+
+matrix<float, 3, 3> keyToXform(uint key)
+{
+    matrix<float, 3, 3> cumulativeTransform = 
+    {
+        {1, 0, 0},
+        {0, 1, 0},
+        {0, 0, 1}
+    };
+    while (key > 1u)
+    {
+        cumulativeTransform = mul(bitToXform(key & 1u), cumulativeTransform);
+        key = key >> 1u;
+    }
+    return cumulativeTransform;
+}
+
+ void GetSubdividedVerts(uint key, float4 in_verts[3],out VertexOut vout[3])
+{
+    matrix<float, 3, 3> cumulativeTransform = keyToXform(key);
+    float2 t1 = mul(cumulativeTransform, float3(0.f, 0.f, 1.f)).xy;
+    float2 t2 = mul(cumulativeTransform, float3(1.f, 0.f, 1.f)).xy;
+    float2 t3 = mul(cumulativeTransform, float3(0.f, 1.f, 1.f)).xy;
+    vout[0].PositionHS = mul(barycentricInterp(in_verts, t1), Globals.WorldViewProj);    
+    vout[1].PositionHS = mul(barycentricInterp(in_verts, t2), Globals.WorldViewProj);
+    vout[2].PositionHS = mul(barycentricInterp(in_verts, t3), Globals.WorldViewProj);
+}
+
 
 [RootSignature(ROOT_SIG)]
 [NumThreads(1, 1, 1)]
@@ -133,16 +189,18 @@ void main(
     out vertices VertexOut verts[64]
 )
 {
-
-    uint noOfPrims = 4;
-    uint noOfVerts = 6;
+    
+    uint maxTessLevel = 7u;
+    uint noOfPrims = 1u << maxTessLevel;
+    uint noOfVerts = 3 * noOfPrims;
 
     SetMeshOutputCounts(noOfVerts, noOfPrims);
 
     float r = 1.;
-    float4 pr_0 = float4(0, 0, 0.2, 1);
+    float4 pr_0 = float4(r/2., 0, 0.2, 1);
     float4 pr_1 = float4(r, 0, 0.2, 1);
     float4 pr_2 = float4(0, r, 0.2, 1);
+    
 
     if (gtid < noOfPrims)
     {
@@ -158,29 +216,30 @@ void main(
         p_2.MeshletIndex = 3;
 
         VertexOut p_12 = GetTransformedVert(pr_1, float2(0, 0.5), radians(0), 0.5);
-        p_12.MeshletIndex = 4;
+        p_12.MeshletIndex = 3;
         VertexOut p_01 = GetTransformedVert(pr_0, float2(0.5, 0), radians(PI/2), 0.5);
-        p_01.MeshletIndex = 5;
+        p_01.MeshletIndex = 3;
         VertexOut p_02 = GetTransformedVert(pr_0, float2(0, 0.5), radians(3 * PI / 2), 0.5);
         p_02.MeshletIndex = 6;
 
-        /*verts[0] = p_12;
-        verts[1] = p_1;
-        verts[2] = p_01;
+        //for (uint currKey = 0u; currKey <= 2u << maxTessLevel; currKey++)
+        uint parentKey = 1u << maxTessLevel;
+        for (uint i = 20u; i < parentKey; i++)
+        {
+            uint currKey = parentKey | i;
+            VertexOut vouts[3];
+            float4 in_verts[3] = { pr_0 , pr_1, pr_2 };
+            GetSubdividedVerts(currKey, in_verts, vouts);
+            vouts[0].MeshletIndex = i + 1;
+            verts[3 * i] = vouts[0];
+            verts[3 * i + 1] = p_01;//p_12;//vouts[((maxTessLevel + 1) % 2) + 1];
+            verts[3 * i + 2] = p_12;//p_01;//vouts[(maxTessLevel % 2) + 1];
+            tris[i] = uint3(3 * i, 3 * i + 1, 3 * i + 2);
+        }
+
+        /*verts[0] = p_0;
+        verts[1] = p_2;
+        verts[2] = p_1;
         tris[0] = uint3(0, 1, 2);*/
-
-        verts[0] = p_12;
-        verts[1] = p_02;
-        verts[2] = p_2;
-        tris[0] = uint3(0, 1, 2);
-
-        verts[3] = p_0;
-        tris[1] = uint3(3, 1, 0);
-
-        verts[4] = p_01;
-        tris[2] = uint3(4, 3, 0);
-
-        verts[5] = p_1;
-        tris[3] = uint3(5, 4, 0);
     }
 }
