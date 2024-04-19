@@ -318,7 +318,7 @@ void D3D12MeshletRender::LoadAssets()
         psoDesc.DepthStencilState     = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT); // Less-equal depth test w/ writes; no stencil
         psoDesc.SampleMask            = UINT_MAX;
         psoDesc.SampleDesc            = DefaultSampleDesc();
-
+        psoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
         auto psoStream = CD3DX12_PIPELINE_MESH_STATE_STREAM(psoDesc);
 
         D3D12_PIPELINE_STATE_STREAM_DESC streamDesc;

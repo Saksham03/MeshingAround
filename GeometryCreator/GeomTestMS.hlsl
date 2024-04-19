@@ -178,7 +178,7 @@ matrix<float, 3, 3> keyToXform(uint key)
 
 
 [RootSignature(ROOT_SIG)]
-[NumThreads(1, 1, 1)]
+[NumThreads(128, 1, 1)]
 [OutputTopology("triangle")]
 void main(
     uint gtid : SV_GroupThreadID,
@@ -190,13 +190,13 @@ void main(
 )
 {
     
-    uint maxTessLevel = 7u;
+    uint maxTessLevel = 5u;
     uint noOfPrims = 1u << maxTessLevel;
     uint noOfVerts = 3 * noOfPrims;
 
     SetMeshOutputCounts(noOfVerts, noOfPrims);
 
-    float r = 1.;
+    float r = 50.;
     float4 pr_0 = float4(r/2., 0, 0.2, 1);
     float4 pr_1 = float4(r, 0, 0.2, 1);
     float4 pr_2 = float4(0, r, 0.2, 1);
@@ -224,16 +224,17 @@ void main(
 
         //for (uint currKey = 0u; currKey <= 2u << maxTessLevel; currKey++)
         uint parentKey = 1u << maxTessLevel;
-        for (uint i = 20u; i < parentKey; i++)
+        //for (uint i = 0u; i < parentKey; i++)
         {
+            uint i = gtid;
             uint currKey = parentKey | i;
             VertexOut vouts[3];
             float4 in_verts[3] = { pr_0 , pr_1, pr_2 };
             GetSubdividedVerts(currKey, in_verts, vouts);
             vouts[0].MeshletIndex = i + 1;
             verts[3 * i] = vouts[0];
-            verts[3 * i + 1] = p_01;//p_12;//vouts[((maxTessLevel + 1) % 2) + 1];
-            verts[3 * i + 2] = p_12;//p_01;//vouts[(maxTessLevel % 2) + 1];
+            verts[3 * i + 1] = vouts[((maxTessLevel + 1) % 2) + 1];
+            verts[3 * i + 2] = vouts[(maxTessLevel % 2) + 1];
             tris[i] = uint3(3 * i, 3 * i + 1, 3 * i + 2);
         }
 
