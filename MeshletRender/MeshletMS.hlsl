@@ -9,32 +9,7 @@
 //
 //*********************************************************
 
-#define ROOT_SIG "CBV(b0), \
-                  RootConstants(b1, num32bitconstants=2), \
-                  SRV(t0), \
-                  SRV(t1), \
-                  SRV(t2), \
-                  SRV(t3)"
-
-struct Constants
-{
-    float4x4 World;
-    float4x4 WorldView;
-    float4x4 WorldViewProj;
-    uint     DrawMeshlets;
-};
-
-struct MeshInfo
-{
-    uint IndexBytes;
-    uint MeshletOffset;
-};
-
-struct Vertex
-{
-    float3 Position;
-    float3 Normal;
-};
+#include "Common.hlsli"
 
 struct VertexOut
 {
@@ -42,14 +17,6 @@ struct VertexOut
     float3 PositionVS   : POSITION0;
     float3 Normal       : NORMAL0;
     uint   MeshletIndex : COLOR0;
-};
-
-struct Meshlet
-{
-    uint VertCount;
-    uint VertOffset;
-    uint PrimCount;
-    uint PrimOffset;
 };
 
 ConstantBuffer<Constants> Globals             : register(b0);
@@ -60,15 +27,6 @@ StructuredBuffer<Meshlet> Meshlets            : register(t1);
 ByteAddressBuffer         UniqueVertexIndices : register(t2);
 StructuredBuffer<uint>    PrimitiveIndices    : register(t3);
 
-
-/////
-// Data Loaders
-
-uint3 UnpackPrimitive(uint primitive)
-{
-    // Unpacks a 10 bits per index triangle from a 32-bit uint.
-    return uint3(primitive & 0x3FF, (primitive >> 10) & 0x3FF, (primitive >> 20) & 0x3FF);
-}
 
 uint3 GetPrimitive(Meshlet m, uint index)
 {

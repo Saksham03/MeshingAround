@@ -14,8 +14,7 @@
                   SRV(t0), \
                   SRV(t1), \
                   SRV(t2), \
-                  SRV(t3), \
-                  SRV(t4)"
+                  SRV(t3)"
 
 #define MAX_MS_X 1
 #define MAX_MS_Y 1
@@ -29,17 +28,24 @@ struct Constants
     uint     DrawMeshlets;
 };
 
-struct Payload
+struct MeshInfo
 {
-    uint MeshletIndex;
-    uint InstanceCounts[5];   // The instance count for each LOD level.
-    uint GroupOffsets[5 + 1]; // The offset in threadgroups for each LOD level.
+    uint IndexBytes;
+    uint MeshletOffset;
+};
 
-    // The list of instance indices after culling. Ordered as:
-    // (list of LOD 0 instance indices), (list of LOD 1 instance indices), ... (list of LOD MAX_LOD_LEVELS-1 instance indices)                                            
-    uint InstanceList[10];
-    uint InstanceOffsets[5 + 1]; // The offset into the Instance List at which each LOD level begins.
-    float4 OutVert;
+struct Vertex
+{
+    float3 Position;
+    float3 Normal;
+};
+
+struct Meshlet
+{
+    uint VertCount;
+    uint VertOffset;
+    uint PrimCount;
+    uint PrimOffset;
 };
 
 struct OutVertsList
@@ -48,6 +54,18 @@ struct OutVertsList
     uint currTessLevel;
     float4 OutVerts[512];
 };
+
+
+// Data Loaders begin here
+
+uint3 UnpackPrimitive(uint primitive)
+{
+    // Unpacks a 10 bits per index triangle from a 32-bit uint.
+    return uint3(primitive & 0x3FF, (primitive >> 10) & 0x3FF, (primitive >> 20) & 0x3FF);
+}
+
+
+// All bitwise operators related to tessellation go below
 
 float4 barycentricInterp(float4 in_verts[3], float2 t)
 {
@@ -69,12 +87,7 @@ matrix<float, 3, 3> bitToXform(uint bit)
         float3(column1.y, column2.y, column3.y),
         float3(column1.z, column2.z, column3.z),
     };
-    /*float3x3 xFormMat =
-    {
-        float3(column1.x, column1.y, column1.z),
-        float3(column2.x, column2.y, column2.z),
-        float3(column3.x, column3.y, column3.z),
-    };*/
+
     return xFormMat;
 }
 

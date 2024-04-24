@@ -12,8 +12,8 @@
 #include "stdafx_render.h"
 #include "D3D12MeshletRender.h"
 
-//const wchar_t* D3D12MeshletRender::c_meshFilename = L"..\\Assets\\Dragon_LOD0.bin";
-const wchar_t* D3D12MeshletRender::c_meshFilename = L"..\\Assets\\wahoo.bin";
+const wchar_t* D3D12MeshletRender::c_meshFilename = L"..\\Assets\\Dragon_LOD0.bin";
+//const wchar_t* D3D12MeshletRender::c_meshFilename = L"..\\Assets\\wahoo.bin";
 const wchar_t* D3D12MeshletRender::c_meshObjFilename = L"..\\Assets\\wahoo.obj";
 
 const wchar_t* D3D12MeshletRender::c_meshShaderFilename = L"MeshletMS.cso";
@@ -366,8 +366,8 @@ void D3D12MeshletRender::LoadAssets()
     // to record yet. The main loop expects it to be closed, so close it now.
     ThrowIfFailed(m_commandList->Close());
 
-    //m_model.LoadFromFile(c_meshFilename);
-    m_model.CreateMeshletsFromFile(c_meshObjFilename);
+    m_model.LoadFromFile(c_meshFilename);
+    //m_model.CreateMeshletsFromFile(c_meshObjFilename);
     m_model.UploadGpuResources(m_device.Get(), m_commandQueue.Get(), m_commandAllocators[m_frameIndex].Get(), m_commandList.Get());
 
 #ifdef _DEBUG
@@ -503,7 +503,7 @@ void D3D12MeshletRender::PopulateCommandList()
 
     m_commandList->SetGraphicsRootConstantBufferView(0, m_constantBuffer->GetGPUVirtualAddress() + sizeof(SceneConstantBuffer) * m_frameIndex);
 
-    for (auto& mesh : m_model)
+    /*for (auto& mesh : m_model)
     {
         m_commandList->SetGraphicsRoot32BitConstant(1, mesh.IndexSize, 0);
         m_commandList->SetGraphicsRootShaderResourceView(2, mesh.VertexResources[0]->GetGPUVirtualAddress());
@@ -516,9 +516,29 @@ void D3D12MeshletRender::PopulateCommandList()
             m_commandList->SetGraphicsRoot32BitConstant(1, subset.Offset, 1);
             m_commandList->DispatchMesh(subset.Count, 1, 1);
         }
-    }
+    }*/
 
     m_commandList->SetPipelineState(m_tessPipelineState.Get());
+    int totaltricount = 0;
+    for (auto& mesh : m_model)
+    {
+        m_commandList->SetGraphicsRoot32BitConstant(1, mesh.IndexSize, 0);
+        m_commandList->SetGraphicsRootShaderResourceView(2, mesh.VertexResources[0]->GetGPUVirtualAddress());
+        m_commandList->SetGraphicsRootShaderResourceView(3, mesh.MeshletResource->GetGPUVirtualAddress());
+        m_commandList->SetGraphicsRootShaderResourceView(4, mesh.UniqueVertexIndexResource->GetGPUVirtualAddress());
+        m_commandList->SetGraphicsRootShaderResourceView(5, mesh.PrimitiveIndexResource->GetGPUVirtualAddress());
+
+        int meshletOffset = 0;
+        
+        for (auto& meshlet : mesh.Meshlets)
+        {
+            m_commandList->SetGraphicsRoot32BitConstant(1, meshletOffset, 1);
+            m_commandList->DispatchMesh(meshlet.PrimCount, 1, 1);
+            meshletOffset++;
+            totaltricount += meshlet.PrimCount;
+        }
+    }
+    
     m_commandList->DispatchMesh(10, 1, 1);
 
     // Indicate that the back buffer will now be used to present.

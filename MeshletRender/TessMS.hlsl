@@ -11,18 +11,6 @@
 
 #include "Common.hlsli"
 
-struct MeshInfo
-{
-    uint IndexBytes;
-    uint MeshletOffset;
-};
-
-struct Vertex
-{
-    float3 Position;
-    float3 Normal;
-};
-
 struct VertexOut
 {
     float4 PositionHS   : SV_Position;
@@ -31,13 +19,6 @@ struct VertexOut
     uint   MeshletIndex : COLOR0;
 };
 
-struct Meshlet
-{
-    uint VertCount;
-    uint VertOffset;
-    uint PrimCount;
-    uint PrimOffset;
-};
 
 ConstantBuffer<Constants> Globals             : register(b0);
 ConstantBuffer<MeshInfo>  MeshInfo            : register(b1);
@@ -46,17 +27,8 @@ StructuredBuffer<Vertex>  Vertices            : register(t0);
 StructuredBuffer<Meshlet> Meshlets            : register(t1);
 ByteAddressBuffer         UniqueVertexIndices : register(t2);
 StructuredBuffer<uint>    PrimitiveIndices    : register(t3);
-StructuredBuffer<OutVertsList> OutVertsListBuffer   : register(t4);
+//StructuredBuffer<OutVertsList> OutVertsListBuffer   : register(t4);
 
-
-/////
-// Data Loaders
-
-uint3 UnpackPrimitive(uint primitive)
-{
-    // Unpacks a 10 bits per index triangle from a 32-bit uint.
-    return uint3(primitive & 0x3FF, (primitive >> 10) & 0x3FF, (primitive >> 20) & 0x3FF);
-}
 
 uint3 GetPrimitive(Meshlet m, uint index)
 {

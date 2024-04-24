@@ -1,11 +1,21 @@
 #include "Common.hlsli"
 
-groupshared Payload s_Payload;
 
 groupshared OutVertsList s_OutVertsList;
 
 ConstantBuffer<Constants> Globals             : register(b0);
+ConstantBuffer<MeshInfo>  MeshInfo            : register(b1);
+StructuredBuffer<Vertex>  Vertices            : register(t0);
+StructuredBuffer<Meshlet> Meshlets            : register(t1);
+ByteAddressBuffer         UniqueVertexIndices : register(t2);
+StructuredBuffer<uint>    PrimitiveIndices    : register(t3);
 
+
+uint VertIndex(Meshlet m, uint index)
+{
+    uint localIndex = m.VertOffset + index;
+    return UniqueVertexIndices.Load(localIndex * 4);
+}
 
 float4 GetTransformedVert(float4 in_vert, float2 t_xy, float rot, float scale)
 {
@@ -36,43 +46,42 @@ void GetSubdividedVerts(uint key, float4 in_verts[3], out float4 vout[3])
 void main(uint dtid : SV_DispatchThreadID, uint gtid : SV_GroupThreadID, uint gid : SV_GroupID, uint idx : SV_GroupIndex)
 {
 
-    float r = 150.;
-    float diffFact = 50. * float(dtid);
-    float test_depth = 20.5;
-    float4 pr_0 = float4(r / 2 + diffFact, 0, test_depth, 1);
-    float4 pr_1 = float4(r + diffFact, 0, test_depth, 1);
-    float4 pr_2 = float4(diffFact, r, test_depth, 1);
+    //float r = 150.;
+    //float diffFact = 50. * float(dtid);
+    //float test_depth = 20.5;
+    //float4 pr_0 = float4(r / 2 + diffFact, 0, test_depth, 1);
+    //float4 pr_1 = float4(r + diffFact, 0, test_depth, 1);
+    //float4 pr_2 = float4(diffFact, r, test_depth, 1);    
 
-    if (gid & 1u)
-    {
-        s_OutVertsList.currTessLevel = 6u;
-    }
-    else
-    {
-        s_OutVertsList.currTessLevel = 2u;
-    }
-    s_OutVertsList.MeshletIndex = dtid + 2;
-    s_OutVertsList.OutVerts[0] = pr_0;
-    s_OutVertsList.OutVerts[1] = pr_1;
-    s_OutVertsList.OutVerts[2] = pr_2;
+    //if (gid & 1u)
+    //{
+    //    s_OutVertsList.currTessLevel = 6u;
+    //}
+    //else
+    //{
+    //    s_OutVertsList.currTessLevel = 2u;
+    //}
+    //s_OutVertsList.MeshletIndex = dtid + 2;
+    //s_OutVertsList.OutVerts[0] = pr_0;
+    //s_OutVertsList.OutVerts[1] = pr_1;
+    //s_OutVertsList.OutVerts[2] = pr_2;
+    //
+    //DispatchMesh(1u << s_OutVertsList.currTessLevel, 1, 1, s_OutVertsList);
 
-    /*float4 in_verts[3] = { pr_0 , pr_1, pr_2 };
-    float4 vouts[3];
 
-    GetSubdividedVerts(1u, in_verts, vouts);
-    
+    Meshlet m = Meshlets[MeshInfo.MeshletOffset];
 
-    s_OutVertsList.OutVerts[0] = vouts[1];
-    s_OutVertsList.OutVerts[1] = vouts[0];
-    s_OutVertsList.OutVerts[2] = vouts[2];
-    s_OutVertsList.OutVerts[3] = vouts[0];*/
+    uint3 triFromMeshletBeingProcessedByCurrentThread = UnpackPrimitive(PrimitiveIndices[m.PrimOffset + gid]);
+    uint3 triVertIndices = { 
+        VertIndex(m, triFromMeshletBeingProcessedByCurrentThread.x),
+        VertIndex(m, triFromMeshletBeingProcessedByCurrentThread.y),
+        VertIndex(m, triFromMeshletBeingProcessedByCurrentThread.z)
+    };
 
-    //if (true)
-    {
-        DispatchMesh(1u << s_OutVertsList.currTessLevel, 1, 1, s_OutVertsList);
-    }
-    /*else
-    {
-        DispatchMesh(MAX_MS_X, MAX_MS_Y, MAX_MS_Z, s_Payload);
-    }*/
+    s_OutVertsList.currTessLevel = 3u;
+    s_OutVertsList.OutVerts[0] = float4(Vertices[triVertIndices.x].Position, 1);
+    s_OutVertsList.OutVerts[1] = float4(Vertices[triVertIndices.y].Position, 1);
+    s_OutVertsList.OutVerts[2] = float4(Vertices[triVertIndices.z].Position, 1);
+
+    DispatchMesh(1u << s_OutVertsList.currTessLevel, 1, 1, s_OutVertsList);
 }
