@@ -59,18 +59,21 @@ float4 main(VertexOut input) : SV_TARGET
         shininess = 64.0;
     }
 
-    float3 normal = normalize(input.Normal);
+    //float3 normal = normalize(input.Normal);
 
-    // Do some fancy Blinn-Phong shading!
-    float cosAngle = saturate(dot(normal, lightDir));
-    float3 viewDir = -normalize(input.PositionVS);
-    float3 halfAngle = normalize(lightDir + viewDir);
+    //// Do some fancy Blinn-Phong shading!
+    //float cosAngle = saturate(dot(normal, lightDir));
+    //float3 viewDir = -normalize(input.PositionVS);
+    //float3 halfAngle = normalize(lightDir + viewDir);
 
-    float blinnTerm = saturate(dot(normal, halfAngle));
-    blinnTerm = cosAngle != 0.0 ? blinnTerm : 0.0;
-    blinnTerm = pow(blinnTerm, shininess);
+    //float blinnTerm = saturate(dot(normal, halfAngle));
+    //blinnTerm = cosAngle != 0.0 ? blinnTerm : 0.0;
+    //blinnTerm = pow(blinnTerm, shininess);
 
-    float3 finalColor = (cosAngle + blinnTerm + ambientIntensity) * diffuseColor;
+    //float3 finalColor = (cosAngle + blinnTerm + ambientIntensity) * diffuseColor;
 
-    return float4(finalColor, 1);
+    //return float4(finalColor, 1);
+
+
+    return float4(diffuseColor, 1);
 }

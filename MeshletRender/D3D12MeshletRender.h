@@ -58,10 +58,12 @@ private:
     ComPtr<ID3D12Resource> m_depthStencil;
     ComPtr<ID3D12CommandAllocator> m_commandAllocators[FrameCount];
     ComPtr<ID3D12CommandQueue> m_commandQueue;
-    ComPtr<ID3D12RootSignature> m_rootSignature;
+    ComPtr<ID3D12RootSignature> m_meshletRootSignature;
+    ComPtr<ID3D12RootSignature> m_tessRootSignature;
     ComPtr<ID3D12DescriptorHeap> m_rtvHeap;
     ComPtr<ID3D12DescriptorHeap> m_dsvHeap;
-    ComPtr<ID3D12PipelineState> m_pipelineState;
+    ComPtr<ID3D12PipelineState> m_meshletPipelineState;
+    ComPtr<ID3D12PipelineState> m_tessPipelineState;
     ComPtr<ID3D12Resource> m_constantBuffer;
     UINT m_rtvDescriptorSize;
     UINT m_dsvDescriptorSize;
@@ -94,4 +96,6 @@ private:
     static const wchar_t* c_meshObjFilename;
     static const wchar_t* c_meshShaderFilename;
     static const wchar_t* c_pixelShaderFilename;
+    static const wchar_t* c_tessAmpShaderFilename;
+    static const wchar_t* c_tessMeshShaderFilename;
 };

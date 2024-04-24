@@ -19,6 +19,9 @@ const wchar_t* D3D12MeshletRender::c_meshObjFilename = L"..\\Assets\\wahoo.obj";
 const wchar_t* D3D12MeshletRender::c_meshShaderFilename = L"MeshletMS.cso";
 const wchar_t* D3D12MeshletRender::c_pixelShaderFilename = L"MeshletPS.cso";
 
+const wchar_t* D3D12MeshletRender::c_tessAmpShaderFilename = L"TessAS.cso";
+const wchar_t* D3D12MeshletRender::c_tessMeshShaderFilename = L"TessMS.cso";
+
 
 // Ray casting intersection tests for determining meshlet picking.
 
@@ -293,10 +296,10 @@ void D3D12MeshletRender::LoadAssets()
         ReadDataFromFile(GetAssetFullPath(c_pixelShaderFilename).c_str(), &pixelShader.data, &pixelShader.size);
 
         // Pull root signature from the precompiled mesh shader.
-        ThrowIfFailed(m_device->CreateRootSignature(0, meshShader.data, meshShader.size, IID_PPV_ARGS(&m_rootSignature)));
+        ThrowIfFailed(m_device->CreateRootSignature(0, meshShader.data, meshShader.size, IID_PPV_ARGS(&m_meshletRootSignature)));
 
         D3DX12_MESH_SHADER_PIPELINE_STATE_DESC psoDesc = {};
-        psoDesc.pRootSignature        = m_rootSignature.Get();
+        psoDesc.pRootSignature        = m_meshletRootSignature.Get();
         psoDesc.MS                    = { meshShader.data, meshShader.size };
         psoDesc.PS                    = { pixelShader.data, pixelShader.size };
         psoDesc.NumRenderTargets      = 1;
@@ -314,11 +317,50 @@ void D3D12MeshletRender::LoadAssets()
         streamDesc.pPipelineStateSubobjectStream = &psoStream;
         streamDesc.SizeInBytes                   = sizeof(psoStream);
 
-        ThrowIfFailed(m_device->CreatePipelineState(&streamDesc, IID_PPV_ARGS(&m_pipelineState)));
+        ThrowIfFailed(m_device->CreatePipelineState(&streamDesc, IID_PPV_ARGS(&m_meshletPipelineState)));
+    }
+
+    // Create the second pipeline state for the tessellation pipeline
+    {
+        struct
+        {
+            byte* data;
+            uint32_t size;
+        } tessAmpShader, tessMeshShader, pixelShader;
+
+        ReadDataFromFile(GetAssetFullPath(c_tessAmpShaderFilename).c_str(), &tessAmpShader.data, &tessAmpShader.size);
+        ReadDataFromFile(GetAssetFullPath(c_tessMeshShaderFilename).c_str(), &tessMeshShader.data, &tessMeshShader.size);
+        ReadDataFromFile(GetAssetFullPath(c_pixelShaderFilename).c_str(), &pixelShader.data, &pixelShader.size);
+
+        // Pull root signature from the precompiled mesh shader.
+        ThrowIfFailed(m_device->CreateRootSignature(0, tessAmpShader.data, tessAmpShader.size, IID_PPV_ARGS(&m_tessRootSignature)));
+
+        D3DX12_MESH_SHADER_PIPELINE_STATE_DESC psoDesc = {};
+        psoDesc.pRootSignature = m_tessRootSignature.Get();
+        psoDesc.AS = { tessAmpShader.data, tessAmpShader.size };
+        psoDesc.MS = { tessMeshShader.data, tessMeshShader.size };
+        psoDesc.PS = { pixelShader.data, pixelShader.size };
+        psoDesc.NumRenderTargets = 1;
+        psoDesc.RTVFormats[0] = m_renderTargets[0]->GetDesc().Format;
+        psoDesc.DSVFormat = m_depthStencil->GetDesc().Format;
+        psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);    // CW front; cull back
+        psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);         // Opaque
+        psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT); // Less-equal depth test w/ writes; no stencil
+        psoDesc.SampleMask = UINT_MAX;
+        psoDesc.SampleDesc = DefaultSampleDesc();
+        psoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
+
+        auto psoStream = CD3DX12_PIPELINE_MESH_STATE_STREAM(psoDesc);
+
+        D3D12_PIPELINE_STATE_STREAM_DESC streamDesc;
+        streamDesc.pPipelineStateSubobjectStream = &psoStream;
+        streamDesc.SizeInBytes = sizeof(psoStream);
+
+        ThrowIfFailed(m_device->CreatePipelineState(&streamDesc, IID_PPV_ARGS(&m_tessPipelineState)));
     }
 
     // Create the command list.
-    ThrowIfFailed(m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_commandAllocators[m_frameIndex].Get(), m_pipelineState.Get(), IID_PPV_ARGS(&m_commandList)));
+    ThrowIfFailed(m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_commandAllocators[m_frameIndex].Get(), m_meshletPipelineState.Get(), IID_PPV_ARGS(&m_commandList)));
 
     // Command lists are created in the recording state, but there is nothing
     // to record yet. The main loop expects it to be closed, so close it now.
@@ -439,10 +481,10 @@ void D3D12MeshletRender::PopulateCommandList()
     // However, when ExecuteCommandList() is called on a particular command 
     // list, that command list can then be reset at any time and must be before 
     // re-recording.
-    ThrowIfFailed(m_commandList->Reset(m_commandAllocators[m_frameIndex].Get(), m_pipelineState.Get()));
+    ThrowIfFailed(m_commandList->Reset(m_commandAllocators[m_frameIndex].Get(), m_meshletPipelineState.Get()));
 
     // Set necessary state.
-    m_commandList->SetGraphicsRootSignature(m_rootSignature.Get());
+    m_commandList->SetGraphicsRootSignature(m_meshletRootSignature.Get());
     m_commandList->RSSetViewports(1, &m_viewport);
     m_commandList->RSSetScissorRects(1, &m_scissorRect);
 
@@ -475,6 +517,9 @@ void D3D12MeshletRender::PopulateCommandList()
             m_commandList->DispatchMesh(subset.Count, 1, 1);
         }
     }
+
+    m_commandList->SetPipelineState(m_tessPipelineState.Get());
+    m_commandList->DispatchMesh(10, 1, 1);
 
     // Indicate that the back buffer will now be used to present.
     const auto toPresentBarrier = CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[m_frameIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
