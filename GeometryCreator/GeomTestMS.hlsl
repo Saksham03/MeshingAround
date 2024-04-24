@@ -11,15 +11,6 @@
 
 #include "Common.hlsli"
 
-
-struct Constants
-{
-    float4x4 World;
-    float4x4 WorldView;
-    float4x4 WorldViewProj;
-    uint     DrawMeshlets;
-};
-
 struct MeshInfo
 {
     uint IndexBytes;
@@ -55,6 +46,7 @@ StructuredBuffer<Vertex>  Vertices            : register(t0);
 StructuredBuffer<Meshlet> Meshlets            : register(t1);
 ByteAddressBuffer         UniqueVertexIndices : register(t2);
 StructuredBuffer<uint>    PrimitiveIndices    : register(t3);
+StructuredBuffer<OutVertsList> OutVertsListBuffer   : register(t4);
 
 
 /////
@@ -120,51 +112,6 @@ VertexOut GetTransformedVert(float4 in_vert, float2 t_xy, float rot, float scale
     return vout;
 }
 
-float4 barycentricInterp(float4 in_verts[3], float2 t)
-{
-    return
-        in_verts[0] +
-        t.x * (in_verts[1] - in_verts[0]) +
-        t.y * (in_verts[2] - in_verts[0]);
-}
-
-matrix<float, 3, 3> bitToXform(uint bit)
-{
-    float scale = float(bit) - 0.5f;
-    float3 column1 = float3(scale, -0.5f, 0.0);
-    float3 column2 = float3(-0.5f, -scale, 0.0);
-    float3 column3 = float3(0.5f, 0.5f, 1.0);
-    float3x3 xFormMat = 
-    {
-        float3(column1.x, column2.x, column3.x),
-        float3(column1.y, column2.y, column3.y),
-        float3(column1.z, column2.z, column3.z),
-    };
-    /*float3x3 xFormMat =
-    {
-        float3(column1.x, column1.y, column1.z),
-        float3(column2.x, column2.y, column2.z),
-        float3(column3.x, column3.y, column3.z),
-    };*/
-    return xFormMat;
-}
-
-matrix<float, 3, 3> keyToXform(uint key)
-{
-    matrix<float, 3, 3> cumulativeTransform = 
-    {
-        {1, 0, 0},
-        {0, 1, 0},
-        {0, 0, 1}
-    };
-    while (key > 1u)
-    {
-        cumulativeTransform = mul(bitToXform(key & 1u), cumulativeTransform);
-        key = key >> 1u;
-    }
-    return cumulativeTransform;
-}
-
  void GetSubdividedVerts(uint key, float4 in_verts[3],out VertexOut vout[3])
 {
     matrix<float, 3, 3> cumulativeTransform = keyToXform(key);
@@ -184,14 +131,14 @@ void main(
     uint gtid : SV_GroupThreadID,
     uint3 gid : SV_GroupID,
     uint dtid: SV_DispatchThreadID,
-    in payload Payload payload,
-    out indices uint3 tris[126],
-    out vertices VertexOut verts[64]
+    in payload OutVertsList payload,
+    out indices uint3 tris[256],
+    out vertices VertexOut verts[256]
 )
 {
     
-    uint maxTessLevel = 5u;
-    uint noOfPrims = 1u << maxTessLevel;
+    uint maxTessLevel = 1u;
+    uint noOfPrims = 1u << payload.currTessLevel;//1u << maxTessLevel;
     uint noOfVerts = 3 * noOfPrims;
 
     SetMeshOutputCounts(noOfVerts, noOfPrims);
@@ -205,7 +152,13 @@ void main(
     if (gtid < noOfPrims)
     {
         //tris[gtid] = uint3( gtid + 1, 0, gtid == noOfPrims - 1 ? (gtid + 2) % 6 : gtid + 2);
-   
+
+        /*payload.MeshletIndex = 1;
+        if (gtid != 0)
+        {
+            payload.MeshletIndex++;
+        }
+   */
         float PI = 3.14;
 
         VertexOut p_0 = GetTransformedVert(pr_0, float2(0, 0), radians(0.), 1.);
@@ -222,14 +175,13 @@ void main(
         VertexOut p_02 = GetTransformedVert(pr_0, float2(0, 0.5), radians(3 * PI / 2), 0.5);
         p_02.MeshletIndex = 6;
 
-        //for (uint currKey = 0u; currKey <= 2u << maxTessLevel; currKey++)
-        uint parentKey = 1u << maxTessLevel;
-        //for (uint i = 0u; i < parentKey; i++)
+        //uint parentKey = 1u << maxTessLevel;
+        uint parentKey = 1u << payload.currTessLevel;
         {
             uint i = gtid;
             uint currKey = parentKey | i;
             VertexOut vouts[3];
-            float4 in_verts[3] = { pr_0 , pr_1, pr_2 };
+            float4 in_verts[3] = { payload.OutVerts[0], payload.OutVerts[1], payload.OutVerts[2] };// { payload.v1, pr_1, pr_2 };
             GetSubdividedVerts(currKey, in_verts, vouts);
             vouts[0].MeshletIndex = i + 1;
             verts[3 * i] = vouts[0];
@@ -237,6 +189,29 @@ void main(
             verts[3 * i + 2] = vouts[(maxTessLevel % 2) + 1];
             tris[i] = uint3(3 * i, 3 * i + 1, 3 * i + 2);
         }
+
+        /*if (gtid == 0)
+        {
+            VertexOut vout;
+            vout.MeshletIndex = payload.MeshletIndex;
+            vout.PositionHS = payload.OutVerts[0];
+            verts[0] = vout;
+            vout.PositionHS = payload.OutVerts[1];
+            verts[1] = vout;
+            vout.PositionHS = payload.OutVerts[2];
+            verts[2] = vout;
+            vout.PositionHS = payload.OutVerts[3];
+            verts[3] = vout;
+            tris[0] = uint3(3, 0, 2);
+        }
+        else
+        {
+            VertexOut vout;
+            vout.MeshletIndex = payload.MeshletIndex;
+            vout.PositionHS = payload.OutVerts[3];
+            verts[3] = vout;
+            tris[1] = uint3(3, 1, 0);
+        }*/
 
         /*verts[0] = p_0;
         verts[1] = p_2;

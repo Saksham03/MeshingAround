@@ -465,7 +465,7 @@ void D3D12MeshletRender::PopulateCommandList()
 
     m_commandList->SetGraphicsRootConstantBufferView(0, m_constantBuffer->GetGPUVirtualAddress() + sizeof(SceneConstantBuffer) * m_frameIndex);
 
-    m_commandList->DispatchMesh(1, 1, 1);
+    m_commandList->DispatchMesh(10, 1, 1);
     /*for (auto& mesh : m_model)
     {
         m_commandList->SetGraphicsRoot32BitConstant(1, mesh.IndexSize, 0);
