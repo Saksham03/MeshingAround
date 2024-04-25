@@ -53,8 +53,6 @@ void main(
     out vertices VertexOut verts[256]
 )
 {
-    
-    uint maxTessLevel = 1u;
     uint noOfPrims = 1u << payload.currTessLevel;
     uint noOfVerts = 3 * noOfPrims;
 
@@ -71,8 +69,8 @@ void main(
             GetSubdividedVerts(currKey, in_verts, vouts);
             vouts[0].MeshletIndex = payload.MeshletIndex + gtid;
             verts[3 * i] = vouts[0];
-            verts[3 * i + 1] = vouts[((maxTessLevel + 1) % 2) + 1];
-            verts[3 * i + 2] = vouts[(maxTessLevel % 2) + 1];
+            verts[3 * i + 1] = vouts[((payload.currTessLevel + 1) % 2) + 1];
+            verts[3 * i + 2] = vouts[(payload.currTessLevel % 2) + 1];
             tris[i] = uint3(3 * i, 3 * i + 1, 3 * i + 2);
         }
 
