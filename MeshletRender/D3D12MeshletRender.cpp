@@ -539,8 +539,6 @@ void D3D12MeshletRender::PopulateCommandList()
         }
     }
     
-    m_commandList->DispatchMesh(10, 1, 1);
-
     // Indicate that the back buffer will now be used to present.
     const auto toPresentBarrier = CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[m_frameIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
     m_commandList->ResourceBarrier(1, &toPresentBarrier);
