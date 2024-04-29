@@ -169,8 +169,9 @@ HRESULT Model::CreateMeshletsFromFile(const wchar_t* filename)
     m_meshes[0].CullingData = MakeSpan(m_exportMesh.CullData.data(), m_exportMesh.CullData.size());
 
     //Initializing tessellation flags for all meshlets to 0, i.e. do not tessellate
-    m_meshes[0].TessellateMeshletFlags.resize(m_meshes[0].Meshlets.size());
-    std::fill(m_meshes[0].TessellateMeshletFlags.begin(), m_meshes[0].TessellateMeshletFlags.end(), 1u);
+    m_exportMesh.TessFlags.resize(m_exportMesh.Meshlets.size());
+    std::fill(m_exportMesh.TessFlags.begin(), m_exportMesh.TessFlags.end(), 1u);
+    m_meshes[0].TessellateMeshletFlags = MakeSpan(m_exportMesh.TessFlags.data(), m_exportMesh.TessFlags.size());
 
     // Build bounding spheres for each mesh
     for (uint32_t i = 0; i < static_cast<uint32_t>(m_meshes.size()); ++i)
@@ -454,7 +455,7 @@ HRESULT Model::UploadGpuResources(ID3D12Device* device, ID3D12CommandQueue* cmdQ
         auto vertexIndexDesc = CD3DX12_RESOURCE_DESC::Buffer(DivRoundUp(m.UniqueVertexIndices.size(), 4) * 4);
         auto primitiveDesc   = CD3DX12_RESOURCE_DESC::Buffer(m.PrimitiveIndices.size() * sizeof(m.PrimitiveIndices[0]));
         auto meshInfoDesc    = CD3DX12_RESOURCE_DESC::Buffer(sizeof(MeshInfo));
-        m.tessFlagsDesc      = CD3DX12_RESOURCE_DESC::Buffer(m.TessellateMeshletFlags.size());
+        m.tessFlagsDesc      = CD3DX12_RESOURCE_DESC::Buffer(m.TessellateMeshletFlags.size() * sizeof(m.TessellateMeshletFlags[0]));
 
 
         auto defaultHeap = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
