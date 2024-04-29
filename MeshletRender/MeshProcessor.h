@@ -61,7 +61,6 @@ struct ExportMesh
     std::vector<uint8_t>            UniqueVertexIndices;
     std::vector<PackedTriangle>     PrimitiveIndices;
     std::vector<CullData>           CullData;
-    std::vector<uint32_t>           TessFlags;
 };
 
 

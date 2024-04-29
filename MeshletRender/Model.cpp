@@ -169,9 +169,8 @@ HRESULT Model::CreateMeshletsFromFile(const wchar_t* filename)
     m_meshes[0].CullingData = MakeSpan(m_exportMesh.CullData.data(), m_exportMesh.CullData.size());
 
     //Initializing tessellation flags for all meshlets to 0, i.e. do not tessellate
-    m_exportMesh.TessFlags.resize(m_exportMesh.Meshlets.size());
-    std::fill(m_exportMesh.TessFlags.begin(), m_exportMesh.TessFlags.end(), 1u);
-    m_meshes[0].TessellateMeshletFlags = MakeSpan(m_exportMesh.TessFlags.data(), m_exportMesh.TessFlags.size());
+    m_meshes[0].TessellateMeshletFlags.resize(m_meshes[0].Meshlets.size());
+    std::fill(m_meshes[0].TessellateMeshletFlags.begin(), m_meshes[0].TessellateMeshletFlags.end(), 1u);
 
     // Build bounding spheres for each mesh
     for (uint32_t i = 0; i < static_cast<uint32_t>(m_meshes.size()); ++i)
