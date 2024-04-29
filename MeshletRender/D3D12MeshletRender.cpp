@@ -366,8 +366,8 @@ void D3D12MeshletRender::LoadAssets()
     // to record yet. The main loop expects it to be closed, so close it now.
     ThrowIfFailed(m_commandList->Close());
 
-    //m_model.LoadFromFile(c_meshFilename);
-    m_model.CreateMeshletsFromFile(c_meshObjFilename);
+    m_model.LoadFromFile(c_meshFilename);
+    //m_model.CreateMeshletsFromFile(c_meshObjFilename);
     m_model.UploadGpuResources(m_device.Get(), m_commandQueue.Get(), m_commandAllocators[m_frameIndex].Get(), m_commandList.Get());
 
 #ifdef _DEBUG
@@ -519,39 +519,28 @@ void D3D12MeshletRender::PopulateCommandList()
         }
     }
 
-    /*m_commandList->SetPipelineState(m_tessPipelineState.Get());
+    m_commandList->SetPipelineState(m_tessPipelineState.Get());
     int totaltricount = 0;
     for (auto& mesh : m_model)
     {
-        {
-            uint8_t* memory = nullptr;
-            mesh.tessFlagsUpload->Map(0, nullptr, reinterpret_cast<void**>(&memory));
-            for (int i = 1; i < mesh.TessellateMeshletFlags.size(); i += 2)
-            {
-                mesh.TessellateMeshletFlags[i] = 1u;
-            }
-            std::memcpy(memory, mesh.TessellateMeshletFlags.data(), mesh.TessellateMeshletFlags.size() * sizeof(mesh.TessellateMeshletFlags[0]));
-            mesh.tessFlagsUpload->Unmap(0, nullptr);
-        }
-        
-        
+                       
         m_commandList->SetGraphicsRoot32BitConstant(1, mesh.IndexSize, 0);
         m_commandList->SetGraphicsRootShaderResourceView(2, mesh.VertexResources[0]->GetGPUVirtualAddress());
         m_commandList->SetGraphicsRootShaderResourceView(3, mesh.MeshletResource->GetGPUVirtualAddress());
         m_commandList->SetGraphicsRootShaderResourceView(4, mesh.UniqueVertexIndexResource->GetGPUVirtualAddress());
         m_commandList->SetGraphicsRootShaderResourceView(5, mesh.PrimitiveIndexResource->GetGPUVirtualAddress());
         m_commandList->SetGraphicsRootShaderResourceView(6, mesh.tessFlagsUpload->GetGPUVirtualAddress());
-
-        int meshletOffset = 0;
         
-        for (auto& meshlet : mesh.Meshlets)
-        {
-            m_commandList->SetGraphicsRoot32BitConstant(1, meshletOffset, 1);
-            m_commandList->DispatchMesh(meshlet.PrimCount, 1, 1);
-            meshletOffset++;
-            totaltricount += meshlet.PrimCount;
+        for(int i = 0; i < mesh.Meshlets.size(); i++)
+        {            
+            if (mesh.TessellateMeshletFlags[i] == 1u)
+            {
+                m_commandList->SetGraphicsRoot32BitConstant(1, i, 1);
+                m_commandList->DispatchMesh(mesh.Meshlets[i].PrimCount, 1, 1);
+                totaltricount += mesh.Meshlets[i].PrimCount;
+            }
         }
-    }*/
+    }
     
     // Indicate that the back buffer will now be used to present.
     const auto toPresentBarrier = CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[m_frameIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);

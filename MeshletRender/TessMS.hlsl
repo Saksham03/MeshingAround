@@ -68,7 +68,7 @@ void main(
             VertexOut vouts[3];
             float4 in_verts[3] = { payload.OutVerts[0], payload.OutVerts[1], payload.OutVerts[2] };
             GetSubdividedVerts(currKey, in_verts, vouts);
-            vouts[0].MeshletIndex = payload.MeshletIndex;// +gtid; //TessellateFlags[payload.MeshletIndex];
+            vouts[0].MeshletIndex = payload.MeshletIndex + gtid; //TessellateFlags[payload.MeshletIndex];
             verts[3 * i] = vouts[0];
             verts[3 * i + 1] = vouts[((payload.currTessLevel + 1) % 2) + 1];
             verts[3 * i + 2] = vouts[(payload.currTessLevel % 2) + 1];

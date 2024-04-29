@@ -64,7 +64,7 @@ void main(uint dtid : SV_DispatchThreadID, uint gtid : SV_GroupThreadID, uint gi
     s_OutVertsList.OutVerts[0] = float4(Vertices[triVertIndices.x].Position, 1);
     s_OutVertsList.OutVerts[1] = float4(Vertices[triVertIndices.y].Position, 1);
     s_OutVertsList.OutVerts[2] = float4(Vertices[triVertIndices.z].Position, 1);
-    s_OutVertsList.MeshletIndex = TessellateFlags[MeshInfo.MeshletOffset];//m.PrimOffset;
+    s_OutVertsList.MeshletIndex = m.PrimOffset;
 
     DispatchMesh(1u << s_OutVertsList.currTessLevel, 1, 1, s_OutVertsList);
 }
