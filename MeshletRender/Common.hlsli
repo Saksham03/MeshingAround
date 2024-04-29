@@ -14,7 +14,8 @@
                   SRV(t0), \
                   SRV(t1), \
                   SRV(t2), \
-                  SRV(t3)"
+                  SRV(t3), \
+                  SRV(t4)"
 
 #define MAX_MS_X 1
 #define MAX_MS_Y 1

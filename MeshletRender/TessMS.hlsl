@@ -27,6 +27,7 @@ StructuredBuffer<Vertex>  Vertices            : register(t0);
 StructuredBuffer<Meshlet> Meshlets            : register(t1);
 ByteAddressBuffer         UniqueVertexIndices : register(t2);
 StructuredBuffer<uint>    PrimitiveIndices    : register(t3);
+StructuredBuffer<uint>    TessellateFlags     : register(t4);
 
 
  void GetSubdividedVerts(uint key, float4 in_verts[3],out VertexOut vout[3])
@@ -42,7 +43,7 @@ StructuredBuffer<uint>    PrimitiveIndices    : register(t3);
 
 
 [RootSignature(ROOT_SIG)]
-[NumThreads(32, 1, 1)]
+[NumThreads(64, 1, 1)]
 [OutputTopology("triangle")]
 void main(
     uint gtid : SV_GroupThreadID,
@@ -67,7 +68,7 @@ void main(
             VertexOut vouts[3];
             float4 in_verts[3] = { payload.OutVerts[0], payload.OutVerts[1], payload.OutVerts[2] };
             GetSubdividedVerts(currKey, in_verts, vouts);
-            vouts[0].MeshletIndex = payload.MeshletIndex + gtid;
+            vouts[0].MeshletIndex = payload.MeshletIndex;// +gtid; //TessellateFlags[payload.MeshletIndex];
             verts[3 * i] = vouts[0];
             verts[3 * i + 1] = vouts[((payload.currTessLevel + 1) % 2) + 1];
             verts[3 * i + 2] = vouts[(payload.currTessLevel % 2) + 1];

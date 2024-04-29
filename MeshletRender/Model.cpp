@@ -141,7 +141,7 @@ HRESULT Model::CreateMeshletsFromFile(const wchar_t* filename)
 
     meshProcessor.Export(options, m_exportMesh);
 
-    m_meshes.resize(1);
+    m_meshes.resize(1); 
 
     //Index Data
     m_meshes[0].IndexSize = m_exportMesh.IndexSize;
@@ -167,6 +167,10 @@ HRESULT Model::CreateMeshletsFromFile(const wchar_t* filename)
     m_meshes[0].UniqueVertexIndices = MakeSpan(m_exportMesh.UniqueVertexIndices.data(), m_exportMesh.UniqueVertexIndices.size());
     m_meshes[0].PrimitiveIndices = MakeSpan(m_exportMesh.PrimitiveIndices.data(), m_exportMesh.PrimitiveIndices.size());
     m_meshes[0].CullingData = MakeSpan(m_exportMesh.CullData.data(), m_exportMesh.CullData.size());
+
+    //Initializing tessellation flags for all meshlets to 0, i.e. do not tessellate
+    m_meshes[0].TessellateMeshletFlags.resize(m_meshes[0].Meshlets.size());
+    std::fill(m_meshes[0].TessellateMeshletFlags.begin(), m_meshes[0].TessellateMeshletFlags.end(), 1u);
 
     // Build bounding spheres for each mesh
     for (uint32_t i = 0; i < static_cast<uint32_t>(m_meshes.size()); ++i)
@@ -450,6 +454,8 @@ HRESULT Model::UploadGpuResources(ID3D12Device* device, ID3D12CommandQueue* cmdQ
         auto vertexIndexDesc = CD3DX12_RESOURCE_DESC::Buffer(DivRoundUp(m.UniqueVertexIndices.size(), 4) * 4);
         auto primitiveDesc   = CD3DX12_RESOURCE_DESC::Buffer(m.PrimitiveIndices.size() * sizeof(m.PrimitiveIndices[0]));
         auto meshInfoDesc    = CD3DX12_RESOURCE_DESC::Buffer(sizeof(MeshInfo));
+        m.tessFlagsDesc      = CD3DX12_RESOURCE_DESC::Buffer(m.TessellateMeshletFlags.size());
+
 
         auto defaultHeap = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
         ThrowIfFailed(device->CreateCommittedResource(&defaultHeap, D3D12_HEAP_FLAG_NONE, &indexDesc, D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&m.IndexResource)));
@@ -458,6 +464,7 @@ HRESULT Model::UploadGpuResources(ID3D12Device* device, ID3D12CommandQueue* cmdQ
         ThrowIfFailed(device->CreateCommittedResource(&defaultHeap, D3D12_HEAP_FLAG_NONE, &vertexIndexDesc, D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&m.UniqueVertexIndexResource)));
         ThrowIfFailed(device->CreateCommittedResource(&defaultHeap, D3D12_HEAP_FLAG_NONE, &primitiveDesc, D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&m.PrimitiveIndexResource)));
         ThrowIfFailed(device->CreateCommittedResource(&defaultHeap, D3D12_HEAP_FLAG_NONE, &meshInfoDesc, D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&m.MeshInfoResource)));
+        ThrowIfFailed(device->CreateCommittedResource(&defaultHeap, D3D12_HEAP_FLAG_NONE, &m.tessFlagsDesc, D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&m.TessFlagsResource)));
 
 
         m.IBView.BufferLocation = m.IndexResource->GetGPUVirtualAddress();
@@ -493,6 +500,7 @@ HRESULT Model::UploadGpuResources(ID3D12Device* device, ID3D12CommandQueue* cmdQ
         ThrowIfFailed(device->CreateCommittedResource(&uploadHeap, D3D12_HEAP_FLAG_NONE, &vertexIndexDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&uniqueVertexIndexUpload)));
         ThrowIfFailed(device->CreateCommittedResource(&uploadHeap, D3D12_HEAP_FLAG_NONE, &primitiveDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&primitiveIndexUpload)));
         ThrowIfFailed(device->CreateCommittedResource(&uploadHeap, D3D12_HEAP_FLAG_NONE, &meshInfoDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&meshInfoUpload)));
+        ThrowIfFailed(device->CreateCommittedResource(&uploadHeap, D3D12_HEAP_FLAG_NONE, &m.tessFlagsDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&m.tessFlagsUpload)));
 
         // Map & copy memory to upload heap
         vertexUploads.resize(m.Vertices.size());
@@ -556,6 +564,13 @@ HRESULT Model::UploadGpuResources(ID3D12Device* device, ID3D12CommandQueue* cmdQ
             meshInfoUpload->Unmap(0, nullptr);
         }
 
+        {
+            uint8_t* memory = nullptr;
+            m.tessFlagsUpload->Map(0, nullptr, reinterpret_cast<void**>(&memory));
+            std::memcpy(memory, m.TessellateMeshletFlags.data(), m.TessellateMeshletFlags.size() * sizeof(m.TessellateMeshletFlags[0]));
+            m.tessFlagsUpload->Unmap(0, nullptr);
+        }
+
         // Populate our command list
         cmdList->Reset(cmdAlloc, nullptr);
 
@@ -566,7 +581,7 @@ HRESULT Model::UploadGpuResources(ID3D12Device* device, ID3D12CommandQueue* cmdQ
             cmdList->ResourceBarrier(1, &barrier);
         }
 
-        D3D12_RESOURCE_BARRIER postCopyBarriers[6];
+        D3D12_RESOURCE_BARRIER postCopyBarriers[7];
 
         cmdList->CopyResource(m.IndexResource.Get(), indexUpload.Get());
         postCopyBarriers[0] = CD3DX12_RESOURCE_BARRIER::Transition(m.IndexResource.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
@@ -585,6 +600,9 @@ HRESULT Model::UploadGpuResources(ID3D12Device* device, ID3D12CommandQueue* cmdQ
 
         cmdList->CopyResource(m.MeshInfoResource.Get(), meshInfoUpload.Get());
         postCopyBarriers[5] = CD3DX12_RESOURCE_BARRIER::Transition(m.MeshInfoResource.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+
+        cmdList->CopyResource(m.TessFlagsResource.Get(), m.tessFlagsUpload.Get());
+        postCopyBarriers[6] = CD3DX12_RESOURCE_BARRIER::Transition(m.TessFlagsResource.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
         cmdList->ResourceBarrier(ARRAYSIZE(postCopyBarriers), postCopyBarriers);
 

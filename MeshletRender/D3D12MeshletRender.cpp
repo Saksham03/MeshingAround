@@ -527,6 +527,7 @@ void D3D12MeshletRender::PopulateCommandList()
         m_commandList->SetGraphicsRootShaderResourceView(3, mesh.MeshletResource->GetGPUVirtualAddress());
         m_commandList->SetGraphicsRootShaderResourceView(4, mesh.UniqueVertexIndexResource->GetGPUVirtualAddress());
         m_commandList->SetGraphicsRootShaderResourceView(5, mesh.PrimitiveIndexResource->GetGPUVirtualAddress());
+        m_commandList->SetGraphicsRootShaderResourceView(6, mesh.TessFlagsResource->GetGPUVirtualAddress());
 
         int meshletOffset = 0;
         

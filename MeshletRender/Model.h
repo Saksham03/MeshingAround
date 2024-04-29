@@ -91,9 +91,12 @@ struct Mesh
     Span<PackedTriangle>       PrimitiveIndices;
     Span<CullData>             CullingData;
 
+    std::vector<uint32_t>          TessellateMeshletFlags;
+
     // D3D resource references
     std::vector<D3D12_VERTEX_BUFFER_VIEW>  VBViews;
     D3D12_INDEX_BUFFER_VIEW                IBView;
+    CD3DX12_RESOURCE_DESC                  tessFlagsDesc;
 
     std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>> VertexResources;
     Microsoft::WRL::ComPtr<ID3D12Resource>              IndexResource;
@@ -102,6 +105,9 @@ struct Mesh
     Microsoft::WRL::ComPtr<ID3D12Resource>              PrimitiveIndexResource;
     Microsoft::WRL::ComPtr<ID3D12Resource>              CullDataResource;
     Microsoft::WRL::ComPtr<ID3D12Resource>              MeshInfoResource;
+    Microsoft::WRL::ComPtr<ID3D12Resource>              TessFlagsResource;
+
+    ComPtr<ID3D12Resource>                              tessFlagsUpload;
 
     // Calculates the number of instances of the last meshlet which can be packed into a single threadgroup.
     uint32_t GetLastMeshletPackCount(uint32_t subsetIndex, uint32_t maxGroupVerts, uint32_t maxGroupPrims) 

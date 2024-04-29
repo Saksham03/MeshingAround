@@ -9,6 +9,7 @@ StructuredBuffer<Vertex>  Vertices            : register(t0);
 StructuredBuffer<Meshlet> Meshlets            : register(t1);
 ByteAddressBuffer         UniqueVertexIndices : register(t2);
 StructuredBuffer<uint>    PrimitiveIndices    : register(t3);
+StructuredBuffer<uint>    TessellateFlags     : register(t4);
 
 
 uint VertIndex(Meshlet m, uint index)
@@ -59,11 +60,11 @@ void main(uint dtid : SV_DispatchThreadID, uint gtid : SV_GroupThreadID, uint gi
         VertIndex(m, triFromMeshletBeingProcessedByCurrentThread.z)
     };
 
-    s_OutVertsList.currTessLevel = 2u;
+    s_OutVertsList.currTessLevel = 4u;
     s_OutVertsList.OutVerts[0] = float4(Vertices[triVertIndices.x].Position, 1);
     s_OutVertsList.OutVerts[1] = float4(Vertices[triVertIndices.y].Position, 1);
     s_OutVertsList.OutVerts[2] = float4(Vertices[triVertIndices.z].Position, 1);
-    s_OutVertsList.MeshletIndex = m.PrimOffset;
+    s_OutVertsList.MeshletIndex = TessellateFlags[59];//m.PrimOffset;
 
     DispatchMesh(1u << s_OutVertsList.currTessLevel, 1, 1, s_OutVertsList);
 }
