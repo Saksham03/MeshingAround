@@ -151,7 +151,7 @@ public:
     HRESULT UploadGpuResources(ID3D12Device* device, ID3D12CommandQueue* cmdQueue, ID3D12CommandAllocator* cmdAlloc, ID3D12GraphicsCommandList* cmdList);
 
     uint32_t GetMeshCount() const { return static_cast<uint32_t>(m_meshes.size()); }
-    const Mesh& GetMesh(uint32_t i) const { return m_meshes[i]; }
+    Mesh& GetMesh(uint32_t i) { return m_meshes[i]; }    
 
     const DirectX::BoundingSphere& GetBoundingSphere() const { return m_boundingSphere; }
 

@@ -510,6 +510,7 @@ void D3D12MeshletRender::PopulateCommandList()
         m_commandList->SetGraphicsRootShaderResourceView(3, mesh.MeshletResource->GetGPUVirtualAddress());
         m_commandList->SetGraphicsRootShaderResourceView(4, mesh.UniqueVertexIndexResource->GetGPUVirtualAddress());
         m_commandList->SetGraphicsRootShaderResourceView(5, mesh.PrimitiveIndexResource->GetGPUVirtualAddress());
+        m_commandList->SetGraphicsRootShaderResourceView(6, mesh.tessFlagsUpload->GetGPUVirtualAddress());
 
         for (auto& subset : mesh.MeshletSubsets)
         {
@@ -646,6 +647,13 @@ void D3D12MeshletRender::raycastToPickClickedMeshlet()
             {
                 minT = t;
                 m_highlightedIndex = i;
+                mesh.TessellateMeshletFlags[i] = 1u;
+                {
+                    uint8_t* memory = nullptr;
+                    mesh.tessFlagsUpload->Map(0, nullptr, reinterpret_cast<void**>(&memory));
+                    std::memcpy(memory, mesh.TessellateMeshletFlags.data(), mesh.TessellateMeshletFlags.size() * sizeof(mesh.TessellateMeshletFlags[0]));
+                    mesh.tessFlagsUpload->Unmap(0, nullptr);
+                }
             }
         }
     }

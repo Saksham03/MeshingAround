@@ -26,6 +26,7 @@ StructuredBuffer<Vertex>  Vertices            : register(t0);
 StructuredBuffer<Meshlet> Meshlets            : register(t1);
 ByteAddressBuffer         UniqueVertexIndices : register(t2);
 StructuredBuffer<uint>    PrimitiveIndices    : register(t3);
+StructuredBuffer<uint>    TessellateFlags     : register(t4);
 
 
 uint3 GetPrimitive(Meshlet m, uint index)
@@ -79,6 +80,9 @@ void main(
     out vertices VertexOut verts[64]
 )
 {
+    if (TessellateFlags[MeshInfo.MeshletOffset + gid] == 1u)
+        return;
+    
     Meshlet m = Meshlets[MeshInfo.MeshletOffset + gid];
 
     SetMeshOutputCounts(m.VertCount, m.PrimCount);
