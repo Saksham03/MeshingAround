@@ -505,12 +505,19 @@ void D3D12MeshletRender::PopulateCommandList()
 
     for (auto& mesh : m_model)
     {
+        
+        auto meshTessFlagsBarrier = CD3DX12_RESOURCE_BARRIER::Transition(mesh.TessFlagsResource.Get(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_DEST);
+        m_commandList->ResourceBarrier(1, &meshTessFlagsBarrier);
+        m_commandList->CopyResource(mesh.TessFlagsResource.Get(), mesh.tessFlagsUpload.Get());
+        meshTessFlagsBarrier = CD3DX12_RESOURCE_BARRIER::Transition(mesh.TessFlagsResource.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_GENERIC_READ);
+        m_commandList->ResourceBarrier(1, &meshTessFlagsBarrier);
+        
         m_commandList->SetGraphicsRoot32BitConstant(1, mesh.IndexSize, 0);
         m_commandList->SetGraphicsRootShaderResourceView(2, mesh.VertexResources[0]->GetGPUVirtualAddress());
         m_commandList->SetGraphicsRootShaderResourceView(3, mesh.MeshletResource->GetGPUVirtualAddress());
         m_commandList->SetGraphicsRootShaderResourceView(4, mesh.UniqueVertexIndexResource->GetGPUVirtualAddress());
         m_commandList->SetGraphicsRootShaderResourceView(5, mesh.PrimitiveIndexResource->GetGPUVirtualAddress());
-        m_commandList->SetGraphicsRootShaderResourceView(6, mesh.tessFlagsUpload->GetGPUVirtualAddress());
+        m_commandList->SetGraphicsRootShaderResourceView(6, mesh.TessFlagsResource->GetGPUVirtualAddress());
 
         for (auto& subset : mesh.MeshletSubsets)
         {
@@ -521,7 +528,7 @@ void D3D12MeshletRender::PopulateCommandList()
 
     m_commandList->SetPipelineState(m_tessPipelineState.Get());
     int totaltricount = 0;
-    for (auto& mesh : m_model)
+    /*for (auto& mesh : m_model)
     {
                        
         m_commandList->SetGraphicsRoot32BitConstant(1, mesh.IndexSize, 0);
@@ -540,7 +547,7 @@ void D3D12MeshletRender::PopulateCommandList()
                 totaltricount += mesh.Meshlets[i].PrimCount;
             }
         }
-    }
+    }*/
     
     // Indicate that the back buffer will now be used to present.
     const auto toPresentBarrier = CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[m_frameIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
