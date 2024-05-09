@@ -422,17 +422,27 @@ void D3D12MeshletRender::OnUpdate()
 
     m_camera.Update(static_cast<float>(m_timer.GetElapsedSeconds()));
 
+    float fov = XM_PI / 3.0f;
+
     XMMATRIX world = XMMATRIX(g_XMIdentityR0, g_XMIdentityR1, g_XMIdentityR2, g_XMIdentityR3);
     XMMATRIX view = m_camera.GetViewMatrix();
-    XMMATRIX proj = m_camera.GetProjectionMatrix(XM_PI / 3.0f, m_aspectRatio);
+    XMMATRIX proj = m_camera.GetProjectionMatrix(fov, m_aspectRatio);
     
     XMStoreFloat4x4(&m_constantBufferData.World, XMMatrixTranspose(world));
     XMStoreFloat4x4(&m_constantBufferData.WorldView, XMMatrixTranspose(world * view));
     XMStoreFloat4x4(&m_constantBufferData.WorldViewProj, XMMatrixTranspose(world * view * proj));
+    m_constantBufferData.CamPos = m_camera.GetCamPos();
     m_constantBufferData.DrawMeshlets = true;
 
     raycastToPickClickedMeshlet();
     m_constantBufferData.HighlightedIndex = m_highlightedIndex;
+    
+    float screenWidth = 1280.0f; // hard-coded value being used in Main.cpp so using as-is for now for testing, please xcuze
+    float target_length = 8.0f;
+    int cpu_lod = 2;
+    float l = 2.0f * tan(fov / 2.0f) * target_length * float(1 << cpu_lod) / screenWidth;
+    float noOfTris = float(m_model.GetMesh(0).PrimitiveIndices.size());
+    m_constantBufferData.LodFactor = l / 10.0f;//noOfTris;
 
     memcpy(m_cbvDataBegin + sizeof(SceneConstantBuffer) * m_frameIndex, &m_constantBufferData, sizeof(m_constantBufferData));
 }

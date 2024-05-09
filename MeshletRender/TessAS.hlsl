@@ -34,15 +34,12 @@ uint VertIndex(Meshlet m, uint index)
     }
 }
 
-void GetSubdividedVerts(uint key, float4 in_verts[3], out float4 vout[3])
+uint distanceToLod(float3 triCentroid)
 {
-    matrix<float, 3, 3> cumulativeTransform = keyToXform(key);
-    float2 t1 = mul(cumulativeTransform, float3(0.f, 0.f, 1.f)).xy;
-    float2 t2 = mul(cumulativeTransform, float3(1.f, 0.f, 1.f)).xy;
-    float2 t3 = mul(cumulativeTransform, float3(0.f, 1.f, 1.f)).xy;
-    vout[0] = mul(barycentricInterp(in_verts, t1), Globals.WorldViewProj);
-    vout[1] = mul(barycentricInterp(in_verts, t2), Globals.WorldViewProj);
-    vout[2] = mul(barycentricInterp(in_verts, t3), Globals.WorldViewProj);
+    float distanceToTri = distance(triCentroid, Globals.CamPos);
+    float lod = distanceToTri *0.005;//Globals.LodFactor;
+    lod = clamp(lod, 0.0, 1.0);
+    return min(uint(-2.0 * log2(lod)), 5u);
 }
 
 
@@ -60,11 +57,13 @@ void main(uint dtid : SV_DispatchThreadID, uint gtid : SV_GroupThreadID, uint gi
         VertIndex(m, triFromMeshletBeingProcessedByCurrentThread.z)
     };
 
-    s_OutVertsList.currTessLevel = 4u;
+    float3 triCentroid = (Vertices[triVertIndices.x].Position + Vertices[triVertIndices.y].Position + Vertices[triVertIndices.z].Position) / 3.f;
+    s_OutVertsList.currTessLevel = distanceToLod(triCentroid);//2u;
     s_OutVertsList.OutVerts[0] = float4(Vertices[triVertIndices.x].Position, 1);
     s_OutVertsList.OutVerts[1] = float4(Vertices[triVertIndices.y].Position, 1);
-    s_OutVertsList.OutVerts[2] = float4(Vertices[triVertIndices.z].Position, 1);
+    s_OutVertsList.OutVerts[2] = float4(Vertices[triVertIndices.z].Position, 1);    
     s_OutVertsList.MeshletIndex = m.PrimOffset;
-
-    DispatchMesh(1u << s_OutVertsList.currTessLevel, 1, 1, s_OutVertsList);
+    //uint lodLevel = 1u << 0u;//distanceToLod(triCentroid);
+    uint lodLevel = 1u << s_OutVertsList.currTessLevel;
+    DispatchMesh(lodLevel, 1, 1, s_OutVertsList);
 }

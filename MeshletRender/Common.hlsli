@@ -17,16 +17,16 @@
                   SRV(t3), \
                   SRV(t4)"
 
-#define MAX_MS_X 1
-#define MAX_MS_Y 1
-#define MAX_MS_Z 1
 
 struct Constants
 {
     float4x4 World;
     float4x4 WorldView;
     float4x4 WorldViewProj;
+    float3   CamPos;
     uint     DrawMeshlets;
+    uint     HighlightedIndex;
+    float    LodFactor;
 };
 
 struct MeshInfo

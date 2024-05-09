@@ -24,6 +24,7 @@ public:
     XMMATRIX GetProjectionMatrix(float fov, float aspectRatio, float nearPlane = 1.0f, float farPlane = 1000.0f);
     void SetMoveSpeed(float unitsPerSecond);
     void SetTurnSpeed(float radiansPerSecond);
+    XMFLOAT3 GetCamPos();
 
     void OnKeyDown(WPARAM key);
     void OnKeyUp(WPARAM key);

@@ -45,8 +45,10 @@ private:
         XMFLOAT4X4 World;
         XMFLOAT4X4 WorldView;
         XMFLOAT4X4 WorldViewProj;
+        XMFLOAT3   CamPos;
         uint32_t   DrawMeshlets;
         uint32_t   HighlightedIndex;
+        float      LodFactor;
     };
 
     // Pipeline objects.

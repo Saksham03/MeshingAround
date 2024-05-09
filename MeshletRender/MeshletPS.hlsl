@@ -8,15 +8,8 @@
 // PURPOSE, MERCHANTABILITY, OR NON-INFRINGEMENT.
 //
 //*********************************************************
+#include "Common.hlsli"
 
-struct Constants
-{
-    float4x4 World;
-    float4x4 WorldView;
-    float4x4 WorldViewProj;
-    uint     DrawMeshlets;
-    uint     HighlightedIndex;
-};
 
 struct VertexOut
 {
