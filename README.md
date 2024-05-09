@@ -46,7 +46,7 @@
 * Paolo also talks on a high level about their solution to the above problem, and this is how I understood it:
   * A compute shader divides the terrain mesh into meshlets:<br>![](captures/ragnarok_sol1.png)
   * It then decides whether to draw the meshlet with the regular vertex pipeline or with the hardware tessellation:<br>![](captures/ragnarok_sol2.png)
-  * 
+    
 </details>
 
 <details>
@@ -145,7 +145,7 @@ As stated before, since I couldn't use the Hardware Tessellation Pipeline offere
 <summary> Binary Tree Heirarchy </summary><br>   
 
 * The first part of the paper talks about how to tessellate one triangle into multiple based on the required tessellation level:  
-<img src="captures/paper_tess1.png" width=500>
+<img src="captures/paper_tess1.png" width=500><br>  
 * At each tessellation level, each triangle is split into 2 - as can be seen in the 2 grey triangles in the above picture. Therefore, we can construct a binary tree to store such a hierarchy.
 * Each parent has a binary “key” representing its level.
 * Each child key gets a 0 or 1 appended to its parent’s key. For example, the child marked below in the 3 red vertices has a key 0100:<br> <img src="captures/paper_tess3.png" width=150>
@@ -164,8 +164,8 @@ As stated before, since I couldn't use the Hardware Tessellation Pipeline offere
 <summary> Barycentric Remapping </summary>   <br>
 
 * The Tessellation portion considers the base case to be a right triangle, however that will rarely be the case in an actual mesh.
-* The paper then talks about how barycentric weights can be used to morph the leaf-space right triangle (in a child's local space) to the object-space triangle (mesh's world space).<br> <img src="captures/paper_bary.png" width=500><br>(The 'Quadtree' space approach is implemented in their thesis and not in the paper, however the concept remains the same).
-* I also got to implementing the barycentric remapping before proceeding to ensure I can map a tessellated triangle back to its position the mesh.
+* The paper then talks about how barycentric weights can be used to morph the leaf-space right triangle (in a child's local space) to the object-space triangle (mesh's world space).<br> <img src="captures/paper_bary.png" width=600><br>(The 'Quadtree' space approach is implemented in their thesis and not in the paper, however the concept remains the same).
+* I also got to implementing the barycentric remapping before proceeding to ensure I can map a tessellated triangle back to its position in the mesh.
 
 |![](captures/bary_test_onetri.png)|&rarr;|![](captures/bary_test_tesstris.png)|
 |:-:|:-:|:-:|
