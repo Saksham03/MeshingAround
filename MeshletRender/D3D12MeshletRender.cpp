@@ -504,53 +504,53 @@ void D3D12MeshletRender::PopulateCommandList()
 
     m_commandList->SetGraphicsRootConstantBufferView(0, m_constantBuffer->GetGPUVirtualAddress() + sizeof(SceneConstantBuffer) * m_frameIndex);
 
-    for (auto& mesh : m_model)
-    {
-           
-        if (tessFlagsUpdated)
-        {
-            WaitForGpu();
+    //for (auto& mesh : m_model)
+    //{
+    //       
+    //    if (tessFlagsUpdated)
+    //    {
+    //        WaitForGpu();
 
-            uint32_t newTessFlagBufferSize = mesh.TessellateMeshletFlags.size() * sizeof(mesh.TessellateMeshletFlags[0]);
-            if (m_highlightedIndex != UINT32_MAX) newTessFlagBufferSize--; // check only for the case of program start-up
-                       
-            //re-creating the buffer on every update so as to account for the size change
-            auto defaultHeap = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
-            mesh.tessFlagsDesc = CD3DX12_RESOURCE_DESC::Buffer(newTessFlagBufferSize);
-            ThrowIfFailed(m_device->CreateCommittedResource(&defaultHeap, D3D12_HEAP_FLAG_NONE, &mesh.tessFlagsDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&mesh.TessFlagsResource)));
-            auto uploadHeap = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
-            ThrowIfFailed(m_device->CreateCommittedResource(&uploadHeap, D3D12_HEAP_FLAG_NONE, &mesh.tessFlagsDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&mesh.tessFlagsUpload)));
+    //        uint32_t newTessFlagBufferSize = mesh.TessellateMeshletFlags.size() * sizeof(mesh.TessellateMeshletFlags[0]);
+    //        if (m_highlightedIndex != UINT32_MAX) newTessFlagBufferSize--; // check only for the case of program start-up
+    //                   
+    //        //re-creating the buffer on every update so as to account for the size change
+    //        auto defaultHeap = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+    //        mesh.tessFlagsDesc = CD3DX12_RESOURCE_DESC::Buffer(newTessFlagBufferSize);
+    //        ThrowIfFailed(m_device->CreateCommittedResource(&defaultHeap, D3D12_HEAP_FLAG_NONE, &mesh.tessFlagsDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&mesh.TessFlagsResource)));
+    //        auto uploadHeap = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
+    //        ThrowIfFailed(m_device->CreateCommittedResource(&uploadHeap, D3D12_HEAP_FLAG_NONE, &mesh.tessFlagsDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&mesh.tessFlagsUpload)));
 
-            uint32_t* memory = nullptr;
-            mesh.tessFlagsUpload->Map(0, nullptr, reinterpret_cast<void**>(&memory));
-            //remove the meshlet index from the list of indices to be processed to render meshlets as-is
-            mesh.TessellateMeshletFlags.erase(remove(mesh.TessellateMeshletFlags.begin(), mesh.TessellateMeshletFlags.end(), m_highlightedIndex), mesh.TessellateMeshletFlags.end());
-            //now mark this meshlet to be rendered using the tessellation pipeline instead
-            if (m_highlightedIndex != UINT32_MAX) mesh.MeshletIndicesToTessellate.push_back(m_highlightedIndex);
-            std::memcpy(memory, mesh.TessellateMeshletFlags.data(), newTessFlagBufferSize);
-            mesh.tessFlagsUpload->Unmap(0, nullptr);
+    //        uint32_t* memory = nullptr;
+    //        mesh.tessFlagsUpload->Map(0, nullptr, reinterpret_cast<void**>(&memory));
+    //        //remove the meshlet index from the list of indices to be processed to render meshlets as-is
+    //        mesh.TessellateMeshletFlags.erase(remove(mesh.TessellateMeshletFlags.begin(), mesh.TessellateMeshletFlags.end(), m_highlightedIndex), mesh.TessellateMeshletFlags.end());
+    //        //now mark this meshlet to be rendered using the tessellation pipeline instead
+    //        if (m_highlightedIndex != UINT32_MAX) mesh.MeshletIndicesToTessellate.push_back(m_highlightedIndex);
+    //        std::memcpy(memory, mesh.TessellateMeshletFlags.data(), newTessFlagBufferSize);
+    //        mesh.tessFlagsUpload->Unmap(0, nullptr);
 
-            auto meshTessFlagsBarrier = CD3DX12_RESOURCE_BARRIER::Transition(mesh.TessFlagsResource.Get(), D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_COPY_DEST);
-            m_commandList->ResourceBarrier(1, &meshTessFlagsBarrier);
-            m_commandList->CopyResource(mesh.TessFlagsResource.Get(), mesh.tessFlagsUpload.Get());
-            meshTessFlagsBarrier = CD3DX12_RESOURCE_BARRIER::Transition(mesh.TessFlagsResource.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_GENERIC_READ);
-            m_commandList->ResourceBarrier(1, &meshTessFlagsBarrier);
-            tessFlagsUpdated = false;
-        }
-        
-        m_commandList->SetGraphicsRoot32BitConstant(1, mesh.IndexSize, 0);
-        m_commandList->SetGraphicsRootShaderResourceView(2, mesh.VertexResources[0]->GetGPUVirtualAddress());
-        m_commandList->SetGraphicsRootShaderResourceView(3, mesh.MeshletResource->GetGPUVirtualAddress());
-        m_commandList->SetGraphicsRootShaderResourceView(4, mesh.UniqueVertexIndexResource->GetGPUVirtualAddress());
-        m_commandList->SetGraphicsRootShaderResourceView(5, mesh.PrimitiveIndexResource->GetGPUVirtualAddress());
-        m_commandList->SetGraphicsRootShaderResourceView(6, mesh.TessFlagsResource->GetGPUVirtualAddress());
+    //        auto meshTessFlagsBarrier = CD3DX12_RESOURCE_BARRIER::Transition(mesh.TessFlagsResource.Get(), D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_COPY_DEST);
+    //        m_commandList->ResourceBarrier(1, &meshTessFlagsBarrier);
+    //        m_commandList->CopyResource(mesh.TessFlagsResource.Get(), mesh.tessFlagsUpload.Get());
+    //        meshTessFlagsBarrier = CD3DX12_RESOURCE_BARRIER::Transition(mesh.TessFlagsResource.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_GENERIC_READ);
+    //        m_commandList->ResourceBarrier(1, &meshTessFlagsBarrier);
+    //        tessFlagsUpdated = false;
+    //    }
+    //    
+    //    m_commandList->SetGraphicsRoot32BitConstant(1, mesh.IndexSize, 0);
+    //    m_commandList->SetGraphicsRootShaderResourceView(2, mesh.VertexResources[0]->GetGPUVirtualAddress());
+    //    m_commandList->SetGraphicsRootShaderResourceView(3, mesh.MeshletResource->GetGPUVirtualAddress());
+    //    m_commandList->SetGraphicsRootShaderResourceView(4, mesh.UniqueVertexIndexResource->GetGPUVirtualAddress());
+    //    m_commandList->SetGraphicsRootShaderResourceView(5, mesh.PrimitiveIndexResource->GetGPUVirtualAddress());
+    //    m_commandList->SetGraphicsRootShaderResourceView(6, mesh.TessFlagsResource->GetGPUVirtualAddress());
 
-        for (auto& subset : mesh.MeshletSubsets)
-        {
-            m_commandList->SetGraphicsRoot32BitConstant(1, subset.Offset, 1);
-            m_commandList->DispatchMesh(mesh.TessellateMeshletFlags.size(), 1, 1);
-        }
-    }
+    //    for (auto& subset : mesh.MeshletSubsets)
+    //    {
+    //        m_commandList->SetGraphicsRoot32BitConstant(1, subset.Offset, 1);
+    //        m_commandList->DispatchMesh(mesh.TessellateMeshletFlags.size(), 1, 1);
+    //    }
+    //}
 
     m_commandList->SetPipelineState(m_tessPipelineState.Get());
     int totaltricount = 0;
@@ -563,24 +563,14 @@ void D3D12MeshletRender::PopulateCommandList()
         m_commandList->SetGraphicsRootShaderResourceView(3, mesh.MeshletResource->GetGPUVirtualAddress());
         m_commandList->SetGraphicsRootShaderResourceView(4, mesh.UniqueVertexIndexResource->GetGPUVirtualAddress());
         m_commandList->SetGraphicsRootShaderResourceView(5, mesh.PrimitiveIndexResource->GetGPUVirtualAddress());
-        m_commandList->SetGraphicsRootShaderResourceView(6, mesh.tessFlagsUpload->GetGPUVirtualAddress());
+        //m_commandList->SetGraphicsRootShaderResourceView(6, mesh.tessFlagsUpload->GetGPUVirtualAddress());
         
-        for (auto meshletIndex : mesh.MeshletIndicesToTessellate)
+        for (auto meshletIndex : mesh.TessellateMeshletFlags)//mesh.MeshletIndicesToTessellate)
         {
             m_commandList->SetGraphicsRoot32BitConstant(1, meshletIndex, 1);
             m_commandList->DispatchMesh(mesh.Meshlets[meshletIndex].PrimCount, 1, 1);
             totaltricount += mesh.Meshlets[meshletIndex].PrimCount;
-        }
-        
-        /*for(int i = 0; i < mesh.Meshlets.size(); i++)
-        {            
-            if (mesh.TessellateMeshletFlags[i] == 1u)
-            {
-                m_commandList->SetGraphicsRoot32BitConstant(1, i, 1);
-                m_commandList->DispatchMesh(mesh.Meshlets[i].PrimCount, 1, 1);
-                totaltricount += mesh.Meshlets[i].PrimCount;
-            }
-        }*/
+        }     
     }
     
     // Indicate that the back buffer will now be used to present.
@@ -647,6 +637,7 @@ void D3D12MeshletRender::raycastToPickClickedMeshlet()
     auto& mesh = m_model.GetMesh(0);
     for (uint32_t i = 0; i < static_cast<uint32_t>(mesh.Meshlets.size()); ++i)
     {
+
         auto& meshlet = mesh.Meshlets[i];
         auto& cull = mesh.CullingData[i];
 
