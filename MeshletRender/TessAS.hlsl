@@ -58,7 +58,7 @@ void main(uint dtid : SV_DispatchThreadID, uint gtid : SV_GroupThreadID, uint gi
     };
 
     float3 triCentroid = (Vertices[triVertIndices.x].Position + Vertices[triVertIndices.y].Position + Vertices[triVertIndices.z].Position) / 3.f;
-    s_OutVertsList.currTessLevel = distanceToLod(triCentroid);//2u;
+    s_OutVertsList.currTessLevel = 4u;//distanceToLod(triCentroid);//2u;
     s_OutVertsList.OutVerts[0] = float4(Vertices[triVertIndices.x].Position, 1);
     s_OutVertsList.OutVerts[1] = float4(Vertices[triVertIndices.y].Position, 1);
     s_OutVertsList.OutVerts[2] = float4(Vertices[triVertIndices.z].Position, 1);    
