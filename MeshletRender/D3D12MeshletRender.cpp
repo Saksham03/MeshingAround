@@ -83,7 +83,7 @@ D3D12MeshletRender::D3D12MeshletRender(UINT width, UINT height, std::wstring nam
     , m_highlightedIndex(-1)
     , m_fenceEvent{}
     , m_fenceValues{}
-    , tessFlagsUpdated(false)
+    , tessFlagsUpdated(true)
 { }
 
 void D3D12MeshletRender::OnInit()
@@ -367,8 +367,8 @@ void D3D12MeshletRender::LoadAssets()
     // to record yet. The main loop expects it to be closed, so close it now.
     ThrowIfFailed(m_commandList->Close());
 
-    //m_model.LoadFromFile(c_meshFilename);
-    m_model.CreateMeshletsFromFile(c_meshObjFilename);
+    m_model.LoadFromFile(c_meshFilename);
+    //m_model.CreateMeshletsFromFile(c_meshObjFilename);
     m_model.UploadGpuResources(m_device.Get(), m_commandQueue.Get(), m_commandAllocators[m_frameIndex].Get(), m_commandList.Get());
 
 #ifdef _DEBUG
@@ -509,11 +509,21 @@ void D3D12MeshletRender::PopulateCommandList()
            
         if (tessFlagsUpdated)
         {
-            WaitForGpu();            
+            WaitForGpu();
+
+            uint32_t newTessFlagBufferSize = mesh.TessellateMeshletFlags.size() * sizeof(mesh.TessellateMeshletFlags[0]);
+            if (m_highlightedIndex != UINT32_MAX) newTessFlagBufferSize--;
+                       
+            auto defaultHeap = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+            mesh.tessFlagsDesc = CD3DX12_RESOURCE_DESC::Buffer(newTessFlagBufferSize);
+            ThrowIfFailed(m_device->CreateCommittedResource(&defaultHeap, D3D12_HEAP_FLAG_NONE, &mesh.tessFlagsDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&mesh.TessFlagsResource)));
+            auto uploadHeap = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
+            ThrowIfFailed(m_device->CreateCommittedResource(&uploadHeap, D3D12_HEAP_FLAG_NONE, &mesh.tessFlagsDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&mesh.tessFlagsUpload)));
+
             uint32_t* memory = nullptr;
             mesh.tessFlagsUpload->Map(0, nullptr, reinterpret_cast<void**>(&memory));
             mesh.TessellateMeshletFlags.erase(remove(mesh.TessellateMeshletFlags.begin(), mesh.TessellateMeshletFlags.end(), m_highlightedIndex), mesh.TessellateMeshletFlags.end());
-            std::memcpy(memory, mesh.TessellateMeshletFlags.data(), mesh.TessellateMeshletFlags.size() * sizeof(mesh.TessellateMeshletFlags[0]));
+            std::memcpy(memory, mesh.TessellateMeshletFlags.data(), newTessFlagBufferSize);
             mesh.tessFlagsUpload->Unmap(0, nullptr);
 
             auto meshTessFlagsBarrier = CD3DX12_RESOURCE_BARRIER::Transition(mesh.TessFlagsResource.Get(), D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_COPY_DEST);

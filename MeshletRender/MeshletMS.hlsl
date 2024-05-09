@@ -84,7 +84,7 @@ void main(
         return;*/
     
     //Meshlet m = Meshlets[MeshInfo.MeshletOffset + gid];
-    uint meshletIndex = TessellateFlags[MeshInfo.MeshletOffset + gid];
+    uint meshletIndex = TessellateFlags[gid];
     Meshlet m = Meshlets[meshletIndex];
 
     SetMeshOutputCounts(m.VertCount, m.PrimCount);
@@ -97,7 +97,6 @@ void main(
     if (gtid < m.VertCount)
     {
         uint vertexIndex = GetVertexIndex(m, gtid);
-        verts[gtid].MeshletIndex = meshletIndex;
-        verts[gtid] = GetVertexAttributes(gid, vertexIndex);
+        verts[gtid] = GetVertexAttributes(meshletIndex, vertexIndex);
     }
 }
