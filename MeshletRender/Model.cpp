@@ -470,7 +470,7 @@ HRESULT Model::UploadGpuResources(ID3D12Device* device, ID3D12CommandQueue* cmdQ
         ThrowIfFailed(device->CreateCommittedResource(&defaultHeap, D3D12_HEAP_FLAG_NONE, &vertexIndexDesc, D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&m.UniqueVertexIndexResource)));
         ThrowIfFailed(device->CreateCommittedResource(&defaultHeap, D3D12_HEAP_FLAG_NONE, &primitiveDesc, D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&m.PrimitiveIndexResource)));
         ThrowIfFailed(device->CreateCommittedResource(&defaultHeap, D3D12_HEAP_FLAG_NONE, &meshInfoDesc, D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&m.MeshInfoResource)));
-        ThrowIfFailed(device->CreateCommittedResource(&defaultHeap, D3D12_HEAP_FLAG_NONE, &m.tessFlagsDesc, D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&m.TessFlagsResource)));
+        ThrowIfFailed(device->CreateCommittedResource(&defaultHeap, D3D12_HEAP_FLAG_NONE, &m.tessFlagsDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&m.TessFlagsResource)));
 
 
         m.IBView.BufferLocation = m.IndexResource->GetGPUVirtualAddress();
@@ -571,7 +571,7 @@ HRESULT Model::UploadGpuResources(ID3D12Device* device, ID3D12CommandQueue* cmdQ
         }
 
         {
-            uint8_t* memory = nullptr;
+            uint32_t* memory = nullptr;
             m.tessFlagsUpload->Map(0, nullptr, reinterpret_cast<void**>(&memory));
             std::memcpy(memory, m.TessellateMeshletFlags.data(), m.TessellateMeshletFlags.size() * sizeof(m.TessellateMeshletFlags[0]));
             m.tessFlagsUpload->Unmap(0, nullptr);

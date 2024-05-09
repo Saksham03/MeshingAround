@@ -83,6 +83,7 @@ D3D12MeshletRender::D3D12MeshletRender(UINT width, UINT height, std::wstring nam
     , m_highlightedIndex(-1)
     , m_fenceEvent{}
     , m_fenceValues{}
+    , tessFlagsUpdated(false)
 { }
 
 void D3D12MeshletRender::OnInit()
@@ -506,11 +507,30 @@ void D3D12MeshletRender::PopulateCommandList()
     for (auto& mesh : m_model)
     {
         
-        auto meshTessFlagsBarrier = CD3DX12_RESOURCE_BARRIER::Transition(mesh.TessFlagsResource.Get(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_DEST);
-        m_commandList->ResourceBarrier(1, &meshTessFlagsBarrier);
-        m_commandList->CopyResource(mesh.TessFlagsResource.Get(), mesh.tessFlagsUpload.Get());
-        meshTessFlagsBarrier = CD3DX12_RESOURCE_BARRIER::Transition(mesh.TessFlagsResource.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_GENERIC_READ);
-        m_commandList->ResourceBarrier(1, &meshTessFlagsBarrier);
+        /*if(tessFlagsUpdated)
+        {
+            uint32_t* memory = nullptr;
+            mesh.tessFlagsUpload->Map(0, nullptr, reinterpret_cast<void**>(&memory));
+            memory[m_highlightedIndex] = 1u;
+            m_commandList->CopyResource(mesh.TessFlagsResource.Get(), mesh.tessFlagsUpload.Get());
+            mesh.tessFlagsUpload->Unmap(0, nullptr);
+            tessFlagsUpdated = false;
+        }    */    
+        if (tessFlagsUpdated)
+        {
+            WaitForGpu();
+            
+            uint32_t* memory = nullptr;
+            mesh.tessFlagsUpload->Map(0, nullptr, reinterpret_cast<void**>(&memory));
+            memory[m_highlightedIndex] = 1u;
+            
+            auto meshTessFlagsBarrier = CD3DX12_RESOURCE_BARRIER::Transition(mesh.TessFlagsResource.Get(), D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_COPY_DEST);
+            m_commandList->ResourceBarrier(1, &meshTessFlagsBarrier);
+            m_commandList->CopyResource(mesh.TessFlagsResource.Get(), mesh.tessFlagsUpload.Get());
+            meshTessFlagsBarrier = CD3DX12_RESOURCE_BARRIER::Transition(mesh.TessFlagsResource.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_GENERIC_READ);
+            m_commandList->ResourceBarrier(1, &meshTessFlagsBarrier);
+            tessFlagsUpdated = false;
+        }
         
         m_commandList->SetGraphicsRoot32BitConstant(1, mesh.IndexSize, 0);
         m_commandList->SetGraphicsRootShaderResourceView(2, mesh.VertexResources[0]->GetGPUVirtualAddress());
@@ -643,13 +663,8 @@ void D3D12MeshletRender::raycastToPickClickedMeshlet()
             {
                 minT = t;
                 m_highlightedIndex = i;
-                mesh.TessellateMeshletFlags[i] = 1u;
-                {
-                    uint8_t* memory = nullptr;
-                    mesh.tessFlagsUpload->Map(0, nullptr, reinterpret_cast<void**>(&memory));
-                    std::memcpy(memory, mesh.TessellateMeshletFlags.data(), mesh.TessellateMeshletFlags.size() * sizeof(mesh.TessellateMeshletFlags[0]));
-                    mesh.tessFlagsUpload->Unmap(0, nullptr);
-                }
+                mesh.TessellateMeshletFlags[i] = 1u;   
+                tessFlagsUpdated = true;
             }
         }
     }

@@ -76,6 +76,7 @@ private:
     SimpleCamera m_camera;
     Model m_model;
     uint32_t m_highlightedIndex;
+    bool tessFlagsUpdated;
     
     // Synchronization objects.
     UINT m_frameIndex;
