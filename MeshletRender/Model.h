@@ -92,6 +92,7 @@ struct Mesh
     Span<CullData>             CullingData;
 
     std::vector<uint32_t>          TessellateMeshletFlags;
+    std::vector<uint32_t>          MeshletIndicesToTessellate;
 
     // D3D resource references
     std::vector<D3D12_VERTEX_BUFFER_VIEW>  VBViews;

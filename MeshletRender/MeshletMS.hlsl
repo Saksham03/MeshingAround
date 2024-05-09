@@ -80,10 +80,7 @@ void main(
     out vertices VertexOut verts[64]
 )
 {
-    /*if (TessellateFlags[MeshInfo.MeshletOffset + gid] == 1u)
-        return;*/
-    
-    //Meshlet m = Meshlets[MeshInfo.MeshletOffset + gid];
+
     uint meshletIndex = TessellateFlags[gid];
     Meshlet m = Meshlets[meshletIndex];
 
