@@ -367,8 +367,8 @@ void D3D12MeshletRender::LoadAssets()
     // to record yet. The main loop expects it to be closed, so close it now.
     ThrowIfFailed(m_commandList->Close());
 
-    m_model.LoadFromFile(c_meshFilename);
-    //m_model.CreateMeshletsFromFile(c_meshObjFilename);
+    //m_model.LoadFromFile(c_meshFilename);
+    m_model.CreateMeshletsFromFile(c_meshObjFilename);
     m_model.UploadGpuResources(m_device.Get(), m_commandQueue.Get(), m_commandAllocators[m_frameIndex].Get(), m_commandList.Get());
 
 #ifdef _DEBUG
@@ -506,24 +506,16 @@ void D3D12MeshletRender::PopulateCommandList()
 
     for (auto& mesh : m_model)
     {
-        
-        /*if(tessFlagsUpdated)
-        {
-            uint32_t* memory = nullptr;
-            mesh.tessFlagsUpload->Map(0, nullptr, reinterpret_cast<void**>(&memory));
-            memory[m_highlightedIndex] = 1u;
-            m_commandList->CopyResource(mesh.TessFlagsResource.Get(), mesh.tessFlagsUpload.Get());
-            mesh.tessFlagsUpload->Unmap(0, nullptr);
-            tessFlagsUpdated = false;
-        }    */    
+           
         if (tessFlagsUpdated)
         {
-            WaitForGpu();
-            
+            WaitForGpu();            
             uint32_t* memory = nullptr;
             mesh.tessFlagsUpload->Map(0, nullptr, reinterpret_cast<void**>(&memory));
-            memory[m_highlightedIndex] = 1u;
-            
+            mesh.TessellateMeshletFlags.erase(remove(mesh.TessellateMeshletFlags.begin(), mesh.TessellateMeshletFlags.end(), m_highlightedIndex), mesh.TessellateMeshletFlags.end());
+            std::memcpy(memory, mesh.TessellateMeshletFlags.data(), mesh.TessellateMeshletFlags.size() * sizeof(mesh.TessellateMeshletFlags[0]));
+            mesh.tessFlagsUpload->Unmap(0, nullptr);
+
             auto meshTessFlagsBarrier = CD3DX12_RESOURCE_BARRIER::Transition(mesh.TessFlagsResource.Get(), D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_COPY_DEST);
             m_commandList->ResourceBarrier(1, &meshTessFlagsBarrier);
             m_commandList->CopyResource(mesh.TessFlagsResource.Get(), mesh.tessFlagsUpload.Get());
@@ -542,7 +534,7 @@ void D3D12MeshletRender::PopulateCommandList()
         for (auto& subset : mesh.MeshletSubsets)
         {
             m_commandList->SetGraphicsRoot32BitConstant(1, subset.Offset, 1);
-            m_commandList->DispatchMesh(subset.Count, 1, 1);
+            m_commandList->DispatchMesh(mesh.TessellateMeshletFlags.size(), 1, 1);
         }
     }
 
@@ -663,7 +655,7 @@ void D3D12MeshletRender::raycastToPickClickedMeshlet()
             {
                 minT = t;
                 m_highlightedIndex = i;
-                mesh.TessellateMeshletFlags[i] = 1u;   
+                //mesh.TessellateMeshletFlags[i] = 1u;   
                 tessFlagsUpdated = true;
             }
         }

@@ -170,7 +170,11 @@ HRESULT Model::CreateMeshletsFromFile(const wchar_t* filename)
 
     //Initializing tessellation flags for all meshlets to 0, i.e. do not tessellate
     m_meshes[0].TessellateMeshletFlags.resize(m_meshes[0].Meshlets.size());
-    std::fill(m_meshes[0].TessellateMeshletFlags.begin(), m_meshes[0].TessellateMeshletFlags.end(), 0u);
+    for (int i = 0; i < m_meshes[0].Meshlets.size(); i++)
+    {
+        m_meshes[0].TessellateMeshletFlags[i] = i;
+    }
+    //std::fill(m_meshes[0].TessellateMeshletFlags.begin(), m_meshes[0].TessellateMeshletFlags.end(), 0u);
 
     // Build bounding spheres for each mesh
     for (uint32_t i = 0; i < static_cast<uint32_t>(m_meshes.size()); ++i)
@@ -390,7 +394,11 @@ HRESULT Model::LoadFromFile(const wchar_t* filename)
         //Initializing tessellation flags for all meshlets to 0, i.e. do not tessellate
         {            
             mesh.TessellateMeshletFlags.resize(mesh.Meshlets.size());
-            std::fill(mesh.TessellateMeshletFlags.begin(), mesh.TessellateMeshletFlags.end(), 0u);
+            for (int i = 0; i < mesh.Meshlets.size(); i++)
+            {
+                mesh.TessellateMeshletFlags[i] = i;
+            }
+            //std::fill(mesh.TessellateMeshletFlags.begin(), mesh.TessellateMeshletFlags.end(), 0u);
         }
      }
 

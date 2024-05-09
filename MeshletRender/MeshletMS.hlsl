@@ -80,10 +80,12 @@ void main(
     out vertices VertexOut verts[64]
 )
 {
-    if (TessellateFlags[MeshInfo.MeshletOffset + gid] == 1u)
-        return;
+    /*if (TessellateFlags[MeshInfo.MeshletOffset + gid] == 1u)
+        return;*/
     
-    Meshlet m = Meshlets[MeshInfo.MeshletOffset + gid];
+    //Meshlet m = Meshlets[MeshInfo.MeshletOffset + gid];
+    uint meshletIndex = TessellateFlags[MeshInfo.MeshletOffset + gid];
+    Meshlet m = Meshlets[meshletIndex];
 
     SetMeshOutputCounts(m.VertCount, m.PrimCount);
 
@@ -95,6 +97,7 @@ void main(
     if (gtid < m.VertCount)
     {
         uint vertexIndex = GetVertexIndex(m, gtid);
+        verts[gtid].MeshletIndex = meshletIndex;
         verts[gtid] = GetVertexAttributes(gid, vertexIndex);
     }
 }
